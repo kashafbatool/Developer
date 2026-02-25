@@ -18,6 +18,40 @@ struct GeminiService {
         let estimatedDays: Int?
     }
 
+    func suggestGoalTitle(from dreamText: String) async throws -> String {
+        let prompt = """
+        Someone wrote this about their ideal life in one year:
+        "\(dreamText)"
+
+        Extract ONE clear, specific, actionable goal from this vision. Return ONLY the goal title, nothing else. Maximum 10 words. No quotes, no punctuation at the end.
+        Example: "Land a software engineering internship at a top company"
+        """
+
+        let requestBody: [String: Any] = [
+            "contents": [["parts": [["text": prompt]]]]
+        ]
+
+        var request = URLRequest(url: URL(string: "\(apiURL)?key=\(apiKey)")!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw GeminiError.invalidResponse
+        }
+
+        let result = try JSONDecoder().decode(GeminiResponse.self, from: data)
+
+        guard let text = result.candidates.first?.content.parts.first?.text else {
+            throw GeminiError.noContent
+        }
+
+        return text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     func generateMicroTargets(
         goalTitle: String,
         goalDescription: String,

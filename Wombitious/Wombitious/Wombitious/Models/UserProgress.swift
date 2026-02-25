@@ -17,6 +17,8 @@ final class UserProgress {
     var longestStreak: Int
     var lastActivityDate: Date?
     var badges: [String] // Badge identifiers
+    var lastCheckInDate: Date?
+    var todayEnergyLevel: Int // 0 = not checked in, 1-5
 
     init() {
         self.id = UUID()
@@ -25,6 +27,18 @@ final class UserProgress {
         self.currentStreak = 0
         self.longestStreak = 0
         self.badges = []
+        self.lastCheckInDate = nil
+        self.todayEnergyLevel = 0
+    }
+
+    var needsDailyCheckIn: Bool {
+        guard let lastDate = lastCheckInDate else { return true }
+        return !Calendar.current.isDateInToday(lastDate)
+    }
+
+    func recordCheckIn(energyLevel: Int) {
+        todayEnergyLevel = energyLevel
+        lastCheckInDate = Date()
     }
 
     func addPoints(_ points: Int) {

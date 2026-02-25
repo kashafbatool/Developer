@@ -14,41 +14,102 @@ struct DashboardView: View {
     let userProgress: UserProgress
 
     @State private var showGoalCreation = false
+    @State private var showCheckIn = false
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Confidence Score Card
-                    ConfidenceScoreCard(score: userProgress.confidenceScore)
+            ZStack {
+                Color.appBackground.ignoresSafeArea()
 
-                    if let goal = currentGoal {
-                        // Current Goal Card
-                        GoalProgressCard(goal: goal)
+                ScrollView {
+                    VStack(spacing: 24) {
+                        GreetingHeader(energyLevel: userProgress.todayEnergyLevel)
+                        ConfidenceScoreCard(score: userProgress.confidenceScore)
 
-                        // Micro-targets List
-                        MicroTargetsSection(goal: goal, userProgress: userProgress)
-                    } else {
-                        // No goal state
-                        EmptyGoalState(showGoalCreation: $showGoalCreation)
+                        if let goal = currentGoal {
+                            GoalProgressCard(goal: goal)
+                            MicroTargetsSection(goal: goal, userProgress: userProgress)
+                        } else {
+                            EmptyGoalState(showGoalCreation: $showGoalCreation)
+                        }
                     }
+                    .padding()
+                    .padding(.bottom, 20)
                 }
-                .padding()
             }
-            .navigationTitle("Wombitious")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     Button {
                         showGoalCreation = true
                     } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title2)
+                        Image(systemName: "plus")
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.appPlum)
+                            .padding(8)
+                            .background(Color.appPlum.opacity(0.1))
+                            .clipShape(Circle())
                     }
                 }
             }
             .sheet(isPresented: $showGoalCreation) {
                 GoalCreationView(showGoalCreation: $showGoalCreation)
             }
+            .sheet(isPresented: $showCheckIn) {
+                EnergyCheckInView(showCheckIn: $showCheckIn, userProgress: userProgress)
+            }
+            .onAppear {
+                if userProgress.needsDailyCheckIn {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        showCheckIn = true
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct GreetingHeader: View {
+    let energyLevel: Int
+
+    var timeGreeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5..<12: return "Good morning"
+        case 12..<17: return "Good afternoon"
+        default: return "Good evening"
+        }
+    }
+
+    var energyMessage: String {
+        switch energyLevel {
+        case 1: return "Be gentle with yourself today 🌿"
+        case 2: return "Small steps still count 💛"
+        case 3: return "Steady progress wins 🙂"
+        case 4: return "You're in a great place 💪"
+        case 5: return "Today is yours to own 🔥"
+        default: return "Ready to make progress? ✨"
+        }
+    }
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(timeGreeting)
+                    .font(.subheadline)
+                    .foregroundStyle(Color.appTextSecondary)
+                Text("Wombitious")
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .foregroundStyle(Color.appPlum)
+                Text(energyMessage)
+                    .font(.caption)
+                    .foregroundStyle(Color.appGold)
+                    .fontWeight(.medium)
+            }
+            Spacer()
         }
     }
 }
@@ -57,56 +118,58 @@ struct ConfidenceScoreCard: View {
     let score: Int
 
     var body: some View {
-        VStack(spacing: 12) {
-            Text("Confidence Score")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-
+        HStack(spacing: 24) {
             ZStack {
                 Circle()
-                    .stroke(Color.gray.opacity(0.2), lineWidth: 12)
-                    .frame(width: 120, height: 120)
+                    .stroke(Color.appGold.opacity(0.2), lineWidth: 10)
+                    .frame(width: 100, height: 100)
 
                 Circle()
                     .trim(from: 0, to: CGFloat(score) / 100)
-                    .stroke(
-                        LinearGradient(
-                            colors: [.pink, .purple],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        style: StrokeStyle(lineWidth: 12, lineCap: .round)
-                    )
-                    .frame(width: 120, height: 120)
+                    .stroke(Color.appGold, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                    .frame(width: 100, height: 100)
                     .rotationEffect(.degrees(-90))
 
-                VStack {
+                VStack(spacing: 0) {
                     Text("\(score)")
-                        .font(.system(size: 36, weight: .bold))
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(Color.appPlum)
                     Text("/ 100")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.caption2)
+                        .foregroundStyle(Color.appTextSecondary)
                 }
             }
 
-            Text(confidenceMessage)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Confidence Score")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.appTextSecondary)
+
+                Text(confidenceMessage)
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.appPlum)
+
+                Text("Complete steps to grow your score")
+                    .font(.caption)
+                    .foregroundStyle(Color.appTextSecondary)
+                    .lineLimit(2)
+            }
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.05), radius: 8)
+        .padding(20)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .shadow(color: Color.appPlum.opacity(0.08), radius: 12, y: 4)
     }
 
     var confidenceMessage: String {
         switch score {
-        case 0..<20: return "Just getting started 🌱"
-        case 20..<40: return "Building momentum 🚀"
-        case 40..<60: return "Making progress 💫"
-        case 60..<80: return "Feeling confident 💪"
-        case 80..<100: return "Crushing it! 🔥"
-        default: return "You're unstoppable! ⭐️"
+        case 0..<20: return "Just starting 🌱"
+        case 20..<40: return "Building up 🚀"
+        case 40..<60: return "In progress 💫"
+        case 60..<80: return "Confident 💪"
+        case 80..<100: return "Crushing it 🔥"
+        default: return "Unstoppable ⭐️"
         }
     }
 }
@@ -115,48 +178,56 @@ struct GoalProgressCard: View {
     let goal: Goal
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Image(systemName: goal.type.icon)
-                    .font(.title2)
-                    .foregroundStyle(colorForType(goal.type))
-
-                VStack(alignment: .leading) {
-                    Text(goal.title)
-                        .font(.headline)
+                HStack(spacing: 6) {
+                    Image(systemName: goal.type.icon)
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.8))
                     Text(goal.type.rawValue)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.white.opacity(0.8))
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(.white.opacity(0.2))
+                .clipShape(Capsule())
 
                 Spacer()
 
                 Text("\(Int(goal.progressPercentage))%")
                     .font(.title2)
                     .fontWeight(.bold)
+                    .foregroundStyle(Color.appGold)
             }
 
-            ProgressView(value: goal.progressPercentage, total: 100)
-                .tint(colorForType(goal.type))
+            Text(goal.title)
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
 
             Text(goal.goalDescription)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.white.opacity(0.7))
                 .lineLimit(2)
-        }
-        .padding()
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.05), radius: 8)
-    }
 
-    func colorForType(_ type: GoalType) -> Color {
-        switch type {
-        case .career: return .blue
-        case .education: return .purple
-        case .financial: return .green
-        case .personal: return .pink
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(.white.opacity(0.2))
+                        .frame(height: 6)
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.appGold)
+                        .frame(width: geo.size.width * CGFloat(goal.progressPercentage / 100), height: 6)
+                }
+            }
+            .frame(height: 6)
         }
+        .padding(20)
+        .background(Color.appPlum)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .shadow(color: Color.appPlum.opacity(0.3), radius: 12, y: 6)
     }
 }
 
@@ -166,10 +237,19 @@ struct MicroTargetsSection: View {
     let userProgress: UserProgress
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Your Action Steps")
-                .font(.title2)
-                .fontWeight(.bold)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Your Action Steps")
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundStyle(Color.appPlum)
+
+                Spacer()
+
+                Text("\(goal.microTargets.filter(\.isCompleted).count)/\(goal.microTargets.count) done")
+                    .font(.caption)
+                    .foregroundStyle(Color.appTextSecondary)
+            }
 
             ForEach(goal.microTargets.sorted(by: { $0.order < $1.order })) { target in
                 MicroTargetRow(target: target, userProgress: userProgress)
@@ -184,58 +264,65 @@ struct MicroTargetRow: View {
     let userProgress: UserProgress
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 14) {
             Button {
                 target.toggleCompletion()
                 if target.isCompleted {
-                    // Award points
                     userProgress.addPoints(10)
                     userProgress.updateStreak()
-
-                    // Check for badges
                     checkBadges()
                 }
             } label: {
-                Image(systemName: target.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.title2)
-                    .foregroundStyle(target.isCompleted ? .green : .gray)
+                ZStack {
+                    Circle()
+                        .fill(target.isCompleted ? Color.appGold : Color.appPlum.opacity(0.08))
+                        .frame(width: 32, height: 32)
+
+                    if target.isCompleted {
+                        Image(systemName: "checkmark")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.white)
+                    } else {
+                        Circle()
+                            .stroke(Color.appPlum.opacity(0.3), lineWidth: 2)
+                            .frame(width: 32, height: 32)
+                    }
+                }
             }
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(target.title)
-                    .font(.body)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
                     .strikethrough(target.isCompleted)
-                    .foregroundStyle(target.isCompleted ? .secondary : .primary)
+                    .foregroundStyle(target.isCompleted ? Color.appTextSecondary : Color.appPlum)
 
                 if let days = target.estimatedDays {
                     Text("~\(days) days")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.appTextSecondary)
                 }
             }
 
             Spacer()
         }
-        .padding()
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding(14)
+        .background(target.isCompleted ? Color.appGold.opacity(0.08) : Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .shadow(color: .black.opacity(0.04), radius: 6, y: 2)
     }
 
     func checkBadges() {
-        // Check for first step badge
         if userProgress.badges.isEmpty {
             userProgress.addBadge(Badge.firstStep.rawValue)
         }
-
-        // Check for streak badges
         if userProgress.currentStreak >= 7 {
             userProgress.addBadge(Badge.weekWarrior.rawValue)
         }
         if userProgress.currentStreak >= 30 {
             userProgress.addBadge(Badge.streakMaster.rawValue)
         }
-
-        // Check confidence badge
         if userProgress.confidenceScore >= 80 {
             userProgress.addBadge(Badge.confident.rawValue)
         }
@@ -246,41 +333,49 @@ struct EmptyGoalState: View {
     @Binding var showGoalCreation: Bool
 
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "star.circle.fill")
-                .font(.system(size: 80))
-                .foregroundStyle(.pink)
+        VStack(spacing: 28) {
+            ZStack {
+                Circle()
+                    .fill(Color.appPlum.opacity(0.07))
+                    .frame(width: 140, height: 140)
+                Circle()
+                    .fill(Color.appPlum.opacity(0.05))
+                    .frame(width: 110, height: 110)
+                Image(systemName: "star.circle.fill")
+                    .font(.system(size: 64))
+                    .foregroundStyle(Color.appGold)
+            }
 
-            Text("Start Your Journey")
-                .font(.title)
-                .fontWeight(.bold)
+            VStack(spacing: 10) {
+                Text("Your Journey Starts Here")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundStyle(Color.appPlum)
 
-            Text("Set your first ambitious goal and let's break it down into achievable steps.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+                Text("Set your first ambitious goal and let AI break it down into steps you can actually achieve.")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.appTextSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
 
             Button {
                 showGoalCreation = true
             } label: {
-                Text("Create Your Goal")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        LinearGradient(
-                            colors: [.pink, .purple],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                HStack(spacing: 8) {
+                    Image(systemName: "sparkles")
+                    Text("Create Your First Goal")
+                        .fontWeight(.semibold)
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(Color.appPlum)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
             }
             .padding(.horizontal)
         }
-        .padding()
+        .padding(.vertical, 20)
     }
 }
 

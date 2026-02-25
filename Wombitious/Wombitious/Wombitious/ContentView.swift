@@ -44,6 +44,7 @@ struct ContentView: View {
                     Label("Profile", systemImage: "person.fill")
                 }
         }
+        .tint(Color.appPlum)
         .sheet(isPresented: $showOnboarding) {
             OnboardingView(showOnboarding: $showOnboarding)
         }

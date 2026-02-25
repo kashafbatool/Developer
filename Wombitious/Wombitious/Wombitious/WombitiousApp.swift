@@ -22,7 +22,13 @@ struct WombitiousApp: App {
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            // Schema changed — wipe the store and start fresh
+            do {
+                try FileManager.default.removeItem(at: modelConfiguration.url)
+                return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            } catch {
+                fatalError("Could not create ModelContainer: \(error)")
+            }
         }
     }()
 
