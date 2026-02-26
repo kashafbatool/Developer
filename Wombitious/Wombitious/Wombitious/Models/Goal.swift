@@ -18,6 +18,7 @@ final class Goal {
     var targetDate: Date?
     var isCompleted: Bool
     var completedDate: Date?
+    var timelineMonths: Int
 
     @Relationship(deleteRule: .cascade) var microTargets: [MicroTarget]
 
@@ -25,7 +26,8 @@ final class Goal {
         title: String,
         description: String,
         type: GoalType,
-        targetDate: Date? = nil
+        targetDate: Date? = nil,
+        timelineMonths: Int = 3
     ) {
         self.id = UUID()
         self.title = title
@@ -34,6 +36,7 @@ final class Goal {
         self.createdDate = Date()
         self.targetDate = targetDate
         self.isCompleted = false
+        self.timelineMonths = timelineMonths
         self.microTargets = []
     }
 

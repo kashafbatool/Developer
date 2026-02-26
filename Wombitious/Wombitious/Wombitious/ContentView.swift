@@ -27,15 +27,27 @@ struct ContentView: View {
     var body: some View {
         TabView {
             // Home/Dashboard
-            DashboardView(currentGoal: goals.first, userProgress: currentProgress)
+            DashboardView(goals: goals, userProgress: currentProgress)
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
+                }
+
+            // Daily Journal
+            JournalView()
+                .tabItem {
+                    Label("Journal", systemImage: "book.pages")
+                }
+
+            // Vision Board
+            VisionBoardView()
+                .tabItem {
+                    Label("Vision", systemImage: "sparkles.rectangle.stack.fill")
                 }
 
             // Stories Gallery
             StoriesView()
                 .tabItem {
-                    Label("Stories", systemImage: "book.fill")
+                    Label("Stories", systemImage: "person.2.fill")
                 }
 
             // Profile/Progress
@@ -49,7 +61,6 @@ struct ContentView: View {
             OnboardingView(showOnboarding: $showOnboarding)
         }
         .onAppear {
-            // Show onboarding if no goals exist
             if goals.isEmpty {
                 showOnboarding = true
             }
@@ -59,5 +70,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: [Goal.self, UserProgress.self, Story.self])
+        .modelContainer(for: [Goal.self, UserProgress.self, Story.self, JournalEntry.self, VisionItem.self])
 }

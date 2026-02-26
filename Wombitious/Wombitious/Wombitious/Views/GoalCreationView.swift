@@ -17,6 +17,7 @@ struct GoalCreationView: View {
     @State private var dreamText = ""
     @State private var goalTitle = ""
     @State private var selectedType: GoalType?
+    @State private var selectedTimeline = 3
     @State private var isExtractingGoal = false
     @State private var isGeneratingTargets = false
     @State private var showError = false
@@ -44,6 +45,7 @@ struct GoalCreationView: View {
                         GoalConfirmStepView(
                             goalTitle: $goalTitle,
                             selectedType: $selectedType,
+                            selectedTimeline: $selectedTimeline,
                             onContinue: createGoal,
                             isLoading: isGeneratingTargets
                         )
@@ -88,7 +90,6 @@ struct GoalCreationView: View {
                 }
             } catch {
                 await MainActor.run {
-                    // If extraction fails, just move to step 2 with empty field
                     goalTitle = ""
                     isExtractingGoal = false
                     withAnimation { currentStep = 2 }
@@ -108,10 +109,16 @@ struct GoalCreationView: View {
                 let generatedTargets = try await geminiService.generateMicroTargets(
                     goalTitle: goalTitle,
                     goalDescription: dreamText,
-                    goalType: type
+                    goalType: type,
+                    timelineMonths: selectedTimeline
                 )
 
-                let newGoal = Goal(title: goalTitle, description: dreamText, type: type)
+                let newGoal = Goal(
+                    title: goalTitle,
+                    description: dreamText,
+                    type: type,
+                    timelineMonths: selectedTimeline
+                )
 
                 for (index, targetData) in generatedTargets.enumerated() {
                     let microTarget = MicroTarget(
@@ -239,8 +246,16 @@ struct DreamStepView: View {
 struct GoalConfirmStepView: View {
     @Binding var goalTitle: String
     @Binding var selectedType: GoalType?
+    @Binding var selectedTimeline: Int
     let onContinue: () -> Void
     let isLoading: Bool
+
+    let timelineOptions: [(label: String, months: Int)] = [
+        ("1 month", 1),
+        ("3 months", 3),
+        ("6 months", 6),
+        ("1 year", 12)
+    ]
 
     var canContinue: Bool {
         !goalTitle.trimmingCharacters(in: .whitespaces).isEmpty && selectedType != nil
@@ -298,6 +313,42 @@ struct GoalConfirmStepView: View {
                         ForEach(GoalType.allCases, id: \.self) { type in
                             GoalTypeButton(type: type, isSelected: selectedType == type) {
                                 selectedType = type
+                            }
+                        }
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Timeline")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.appTextSecondary)
+                            .textCase(.uppercase)
+                            .tracking(1)
+                        Text("How long do you want to work on this goal?")
+                            .font(.caption)
+                            .foregroundStyle(Color.appTextSecondary)
+                    }
+
+                    HStack(spacing: 10) {
+                        ForEach(timelineOptions, id: \.months) { option in
+                            Button {
+                                selectedTimeline = option.months
+                            } label: {
+                                Text(option.label)
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(selectedTimeline == option.months ? .white : Color.appPlum)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(selectedTimeline == option.months ? Color.appPlum : Color.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(selectedTimeline == option.months ? Color.clear : Color.appPlum.opacity(0.2), lineWidth: 1)
+                                    )
+                                    .shadow(color: selectedTimeline == option.months ? Color.appPlum.opacity(0.2) : .black.opacity(0.03), radius: 4, y: 2)
                             }
                         }
                     }

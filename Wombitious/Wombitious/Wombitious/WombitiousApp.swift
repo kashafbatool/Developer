@@ -15,7 +15,9 @@ struct WombitiousApp: App {
             Goal.self,
             MicroTarget.self,
             Story.self,
-            UserProgress.self
+            UserProgress.self,
+            JournalEntry.self,
+            VisionItem.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

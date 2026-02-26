@@ -8,9 +8,8 @@
 import Foundation
 
 struct GeminiService {
-    // TODO: Add your Gemini API key here
-    private let apiKey = "YOUR_GEMINI_API_KEY_HERE"
-    private let apiURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
+    private let apiKey = "AIzaSyAy2QNrtRpCsf67GX1Ksl4wJcGxcAUzhg8"
+    private let apiURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
 
     struct MicroTargetData {
         let title: String
@@ -55,9 +54,10 @@ struct GeminiService {
     func generateMicroTargets(
         goalTitle: String,
         goalDescription: String,
-        goalType: GoalType
+        goalType: GoalType,
+        timelineMonths: Int = 3
     ) async throws -> [MicroTargetData] {
-        let prompt = buildPrompt(title: goalTitle, description: goalDescription, type: goalType)
+        let prompt = buildPrompt(title: goalTitle, description: goalDescription, type: goalType, timelineMonths: timelineMonths)
 
         let requestBody: [String: Any] = [
             "contents": [
@@ -90,29 +90,39 @@ struct GeminiService {
         return parseMicroTargets(from: text)
     }
 
-    private func buildPrompt(title: String, description: String, type: GoalType) -> String {
-        """
-        You are a goal-setting coach helping an ambitious woman achieve her \(type.rawValue.lowercased()) goal.
+    private func buildPrompt(title: String, description: String, type: GoalType, timelineMonths: Int) -> String {
+        let totalDays = timelineMonths * 30
+        let quickCutoff = max(3, totalDays / 20)       // ~5% of timeline
+        let midCutoff = max(14, totalDays / 4)         // ~25% of timeline
+
+        return """
+        You are a practical goal coach helping an ambitious woman break down her \(type.rawValue.lowercased()) goal into clear, real steps.
 
         Goal: \(title)
-        Description: \(description)
+        Context: \(description)
+        Timeline: \(timelineMonths) month\(timelineMonths == 1 ? "" : "s") (\(totalDays) days total)
 
-        Break this goal down into 5-7 specific, actionable micro-targets that will help her achieve this goal. Each micro-target should:
-        - Be concrete and measurable
-        - Build progressively (start with easier steps, advance to harder ones)
-        - Be achievable within days or weeks, not months
-        - Include an estimated number of days to complete
+        Create exactly 7 steps spread across the FULL \(timelineMonths)-month timeline. Steps should feel like a realistic journey, not a single week's to-do list.
 
-        Format your response EXACTLY as follows (one target per line):
-        1. [Target Title] | [Detailed description of what to do] | [Estimated days]
-        2. [Target Title] | [Detailed description of what to do] | [Estimated days]
-        ...
+        TIER 1 — Quick Wins (2-3 steps, 1–\(quickCutoff) days each):
+        Things to do in the first few days to build momentum.
 
-        Example format:
-        1. Research companies | Look up 10-15 companies in your field that offer internships and create a spreadsheet with their application deadlines | 3
-        2. Update resume | Tailor your resume to highlight relevant skills and experiences for software engineering roles | 2
+        TIER 2 — Building Phase (2-3 steps, \(quickCutoff + 1)–\(midCutoff) days each):
+        The real work — consistent actions spread across the first \(timelineMonths <= 2 ? "few weeks" : "month or two").
 
-        Now provide 5-7 micro-targets for the goal described above:
+        TIER 3 — Big Moves (1-2 steps, \(midCutoff + 1)–\(totalDays) days each):
+        Major milestones that happen in the second half of the timeline, building on everything above.
+
+        STRICT RULES:
+        - Titles must be 3–6 plain words describing the actual task. NO jargon.
+        - BAD titles: "Execute the protocol", "Strategic outreach", "Asset audit", "Optimize your approach".
+        - GOOD titles: "Message 5 recruiters on LinkedIn", "Meal prep for the week", "Submit 8 job applications".
+        - Each step must say WHO, WHICH platform, or HOW MANY — never leave it vague.
+        - Spread the days realistically — don't put everything in the first 2 weeks if the timeline is 6 months.
+
+        Respond in this EXACT format — no intro, no extra text, just the numbered list:
+        1. [Title] | [Specific description of exactly what to do] | [Days as a single integer]
+        2. [Title] | [Specific description of exactly what to do] | [Days as a single integer]
         """
     }
 
