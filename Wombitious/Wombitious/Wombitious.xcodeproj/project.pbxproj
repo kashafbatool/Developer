@@ -24,7 +24,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		E45E0C802F513EDF00AF846C /* Wombitious.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Wombitious.xcodeproj; sourceTree = "<group>"; };
 		E4EC641C2F44EDC6001269D1 /* Wombitious.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wombitious.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E4EC642C2F44EDC8001269D1 /* WombitiousTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WombitiousTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E4EC64362F44EDC8001269D1 /* WombitiousUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WombitiousUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -73,13 +72,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		E45E0C822F513EDF00AF846C /* Products */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		E4EC64132F44EDC6001269D1 = {
 			isa = PBXGroup;
 			children = (
@@ -206,12 +198,6 @@
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E4EC641D2F44EDC6001269D1 /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = E45E0C822F513EDF00AF846C /* Products */;
-					ProjectRef = E45E0C802F513EDF00AF846C /* Wombitious.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				E4EC641B2F44EDC6001269D1 /* Wombitious */,
