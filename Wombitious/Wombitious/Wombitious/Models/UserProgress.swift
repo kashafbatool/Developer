@@ -47,7 +47,7 @@ final class UserProgress {
         case 20..<40: return "Builder"
         case 40..<60: return "Achiever"
         case 60..<80: return "Trailblazer"
-        default: return "Wombitious"
+        default: return "SheRise"
         }
     }
 
@@ -66,7 +66,7 @@ final class UserProgress {
         case 0..<20: return "Builder"
         case 20..<40: return "Achiever"
         case 40..<60: return "Trailblazer"
-        case 60..<80: return "Wombitious"
+        case 60..<80: return "SheRise"
         default: return "Max"
         }
     }

@@ -1,42 +1,62 @@
 //
 //  GoalCompletionView.swift
-//  Wombitious
+//  SheRise
 //
 //  Created by Kashaf Batool
 //
 
 import SwiftUI
 
+// Phases for the trophy PhaseAnimator
+private enum TrophyPhase: CaseIterable {
+    case hidden, pop, settle, glow
+}
+
 struct GoalCompletionView: View {
     let goal: Goal
     let userProgress: UserProgress
     let onDismiss: () -> Void
 
-    @State private var animate = false
+    @State private var showContent = false
+    @State private var hapticTrigger = false
 
     var body: some View {
         ZStack {
             Color.appPlum.ignoresSafeArea()
 
-            if animate {
-                CelebrationConfetti()
-            }
+            CelebrationConfetti()
 
             VStack(spacing: 0) {
                 Spacer()
 
-                // Trophy
-                ZStack {
-                    Circle()
-                        .fill(.white.opacity(0.08))
-                        .frame(width: 160, height: 160)
-                    Circle()
-                        .fill(.white.opacity(0.05))
-                        .frame(width: 110, height: 110)
-                    Text("🏆")
-                        .font(.system(size: 64))
-                        .scaleEffect(animate ? 1.15 : 0.4)
-                        .animation(.spring(response: 0.5, dampingFraction: 0.55), value: animate)
+                // Animated trophy using PhaseAnimator
+                PhaseAnimator(TrophyPhase.allCases, trigger: showContent) { phase in
+                    ZStack {
+                        Circle()
+                            .fill(.white.opacity(glowOpacity(phase)))
+                            .frame(width: 180, height: 180)
+                            .blur(radius: phase == .glow ? 12 : 0)
+
+                        Circle()
+                            .fill(.white.opacity(0.08))
+                            .frame(width: 160, height: 160)
+
+                        Circle()
+                            .fill(.white.opacity(0.05))
+                            .frame(width: 110, height: 110)
+
+                        Text("🏆")
+                            .font(.system(size: 64))
+                            .scaleEffect(trophyScale(phase))
+                            .rotationEffect(.degrees(trophyRotation(phase)))
+                    }
+                } animation: { phase in
+                    switch phase {
+                    case .hidden:  return .easeIn(duration: 0.01)
+                    case .pop:     return .spring(response: 0.45, dampingFraction: 0.5)
+                    case .settle:  return .spring(response: 0.3, dampingFraction: 0.7)
+                    case .glow:    return .easeInOut(duration: 1.2).repeatForever(autoreverses: true)
+                    }
                 }
 
                 Spacer().frame(height: 32)
@@ -45,17 +65,21 @@ struct GoalCompletionView: View {
                     Text("Goal Complete!")
                         .font(.system(size: 38, weight: .bold))
                         .foregroundStyle(.white)
+                        .opacity(showContent ? 1 : 0)
+                        .offset(y: showContent ? 0 : 20)
+                        .animation(.spring(response: 0.5).delay(0.3), value: showContent)
 
                     Text(goal.title)
                         .font(.title3)
                         .foregroundStyle(.white.opacity(0.75))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 32)
+                        .opacity(showContent ? 1 : 0)
+                        .animation(.spring(response: 0.5).delay(0.45), value: showContent)
                 }
 
                 Spacer().frame(height: 32)
 
-                // Stats row
                 HStack(spacing: 0) {
                     completionStat(value: "\(goal.microTargets.count)", label: "Steps done")
                     Divider()
@@ -72,14 +96,17 @@ struct GoalCompletionView: View {
                 .background(.white.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .padding(.horizontal, 24)
+                .opacity(showContent ? 1 : 0)
+                .animation(.spring(response: 0.5).delay(0.55), value: showContent)
 
                 Spacer().frame(height: 16)
 
-                // Rank badge if they levelled up
                 Text("You're a \(userProgress.rank) now")
                     .font(.subheadline)
                     .foregroundStyle(Color.appGold)
                     .fontWeight(.medium)
+                    .opacity(showContent ? 1 : 0)
+                    .animation(.easeIn.delay(0.65), value: showContent)
 
                 Spacer()
 
@@ -94,14 +121,43 @@ struct GoalCompletionView: View {
                         .background(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
+                .accessibilityLabel("Dismiss goal completion and continue")
+                .sensoryFeedback(.success, trigger: hapticTrigger)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 48)
+                .opacity(showContent ? 1 : 0)
+                .animation(.easeIn.delay(0.7), value: showContent)
             }
         }
         .onAppear {
-            withAnimation(.easeOut(duration: 0.4)) {
-                animate = true
-            }
+            showContent = true
+            hapticTrigger.toggle()
+        }
+    }
+
+    // MARK: - PhaseAnimator helpers
+    private func trophyScale(_ phase: TrophyPhase) -> CGFloat {
+        switch phase {
+        case .hidden: return 0.3
+        case .pop:    return 1.25
+        case .settle: return 1.0
+        case .glow:   return 1.05
+        }
+    }
+
+    private func trophyRotation(_ phase: TrophyPhase) -> Double {
+        switch phase {
+        case .hidden: return -15
+        case .pop:    return 8
+        case .settle: return 0
+        case .glow:   return 0
+        }
+    }
+
+    private func glowOpacity(_ phase: TrophyPhase) -> Double {
+        switch phase {
+        case .glow: return 0.12
+        default:    return 0
         }
     }
 
@@ -120,7 +176,7 @@ struct GoalCompletionView: View {
     }
 }
 
-// MARK: - Celebration confetti (bigger than row confetti)
+// MARK: - Celebration confetti
 struct CelebrationConfetti: View {
     @State private var animate = false
     let colors: [Color] = [.white, Color.appGold, Color.appCoral, .yellow, .green, .pink, .cyan]

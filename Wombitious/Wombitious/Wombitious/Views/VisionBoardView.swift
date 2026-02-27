@@ -70,6 +70,7 @@ struct VisionBoardView: View {
                             .background(Color.white.opacity(0.15))
                             .clipShape(Circle())
                     }
+                    .accessibilityLabel("Add photo or quote to vision board")
                 }
             }
             .sheet(isPresented: $showAddSheet) {
@@ -118,6 +119,7 @@ struct VisionItemCard: View {
         }
         .rotationEffect(.degrees(item.rotation))
         .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+        .accessibilityLabel(item.type == .quote ? "Quote: \(item.content)" : "Vision board photo")
     }
 }
 

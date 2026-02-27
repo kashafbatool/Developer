@@ -1,15 +1,16 @@
 //
 //  WombitiousApp.swift
-//  Wombitious
+//  SheRise
 //
 //  Created by Kashaf Batool
 //
 
 import SwiftUI
 import SwiftData
+import TipKit
 
 @main
-struct WombitiousApp: App {
+struct SheRiseApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Goal.self,
@@ -37,6 +38,12 @@ struct WombitiousApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .task {
+                    // Configure TipKit — show tips once per user in production
+                    try? Tips.configure([
+                        .displayFrequency(.immediate)
+                    ])
+                }
         }
         .modelContainer(sharedModelContainer)
     }

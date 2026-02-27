@@ -14,7 +14,7 @@ struct OnboardingView: View {
     let pages = [
         OnboardingPage(
             icon: "star.fill",
-            title: "Welcome to\nWombitious",
+            title: "Welcome to\nSheRise",
             description: "Your journey to achieving ambitious goals starts here. We're here to support you every step of the way.",
             color: Color.appPlum
         ),

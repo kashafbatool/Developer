@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import TipKit
 
 // MARK: - Tape style definitions
 private let tapeColors: [Color] = [
@@ -28,6 +29,7 @@ struct JournalView: View {
 
     @State private var showNewEntry = false
     @State private var showStarredOnly = false
+    private let journalTip = JournalTip()
 
     var displayedEntries: [JournalEntry] {
         showStarredOnly ? entries.filter(\.isStarred) : entries
@@ -43,6 +45,9 @@ struct JournalView: View {
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 20) {
+                            TipView(journalTip, arrowEdge: .top)
+                                .tipBackground(Color(red: 0.96, green: 0.93, blue: 0.87))
+                                .padding(.top, 4)
                             ForEach(displayedEntries) { entry in
                                 JournalEntryCard(entry: entry)
                                     .contextMenu {
@@ -82,6 +87,7 @@ struct JournalView: View {
                             .background(Color.appPlum.opacity(0.1))
                             .clipShape(Circle())
                     }
+                    .accessibilityLabel("Write new journal entry")
                 }
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
@@ -90,6 +96,7 @@ struct JournalView: View {
                         Image(systemName: showStarredOnly ? "star.fill" : "star")
                             .foregroundStyle(showStarredOnly ? Color.appGold : Color.appTextSecondary)
                     }
+                    .accessibilityLabel(showStarredOnly ? "Show all entries" : "Show starred entries only")
                 }
             }
             .sheet(isPresented: $showNewEntry) {

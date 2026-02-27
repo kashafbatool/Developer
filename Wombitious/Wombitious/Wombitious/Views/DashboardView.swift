@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import TipKit
 
 struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
@@ -17,6 +18,9 @@ struct DashboardView: View {
     @State private var showCheckIn = false
     @State private var completedGoal: Goal?
     @State private var lockedFocusID: UUID?
+
+    private let focusTip = FocusTip()
+    private let createGoalTip = CreateGoalTip()
 
     var activeGoals: [Goal] { goals.filter { !$0.isCompleted } }
 
@@ -58,6 +62,8 @@ struct DashboardView: View {
                         ConfidenceScoreCard(score: userProgress.confidenceScore)
 
                         if let focus = lockedFocusPair {
+                            TipView(focusTip, arrowEdge: .bottom)
+                                .tipBackground(Color.appPlum.opacity(0.06))
                             TodaysFocusCard(
                                 goal: focus.goal,
                                 target: focus.target,
@@ -100,6 +106,7 @@ struct DashboardView: View {
                             .background(Color.appPlum.opacity(0.1))
                             .clipShape(Circle())
                     }
+                    .accessibilityLabel("Create new goal")
                 }
             }
             .sheet(isPresented: $showGoalCreation) {
@@ -178,6 +185,7 @@ struct TodaysFocusCard: View {
     let target: MicroTarget
     let userProgress: UserProgress
     let onComplete: () -> Void
+    @State private var hapticTrigger = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -242,6 +250,7 @@ struct TodaysFocusCard: View {
                     if target.isCompleted {
                         userProgress.addPoints(10)
                         userProgress.updateStreak()
+                        hapticTrigger.toggle()
                         onComplete()
                     }
                 } label: {
@@ -257,6 +266,8 @@ struct TodaysFocusCard: View {
                     .background(Color.appPlum.opacity(0.08))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
+                .sensoryFeedback(.success, trigger: hapticTrigger)
+                .accessibilityLabel("Mark \(target.title) as complete")
             }
         }
         .padding(18)
@@ -300,7 +311,7 @@ struct GreetingHeader: View {
                 Text(timeGreeting)
                     .font(.subheadline)
                     .foregroundStyle(Color.appTextSecondary)
-                Text("Wombitious")
+                Text("SheRise")
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundStyle(Color.appPlum)
@@ -527,6 +538,7 @@ struct MicroTargetRow: View {
     let userProgress: UserProgress
     let onGoalComplete: (Goal) -> Void
     @State private var showConfetti = false
+    @State private var hapticTrigger = false
 
     var body: some View {
         HStack(spacing: 14) {
@@ -539,6 +551,7 @@ struct MicroTargetRow: View {
                         userProgress.updateStreak()
                         checkBadges()
                         showConfetti = true
+                        hapticTrigger.toggle()
                         if goal.microTargets.allSatisfy(\.isCompleted) {
                             goal.isCompleted = true
                             userProgress.addBadge(Badge.goalCrusher.rawValue)
@@ -586,6 +599,8 @@ struct MicroTargetRow: View {
         .background(target.isCompleted ? Color.appGold.opacity(0.08) : Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .shadow(color: .black.opacity(0.04), radius: 6, y: 2)
+        .sensoryFeedback(.success, trigger: hapticTrigger)
+        .accessibilityLabel(target.isCompleted ? "Step completed: \(target.title)" : "Step: \(target.title)")
     }
 
     func checkBadges() {
