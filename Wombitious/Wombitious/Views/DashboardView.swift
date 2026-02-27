@@ -490,6 +490,10 @@ struct MicroTargetsSection: View {
                     .foregroundStyle(Color.appTextSecondary)
             }
 
+            if !goal.aiReasoning.isEmpty {
+                AIReasoningCard(reasoning: goal.aiReasoning)
+            }
+
             if !quickWins.isEmpty {
                 targetGroup(emoji: "⚡️", label: "Quick Wins", sublabel: "first \(quickCutoff) days", targets: quickWins)
             }
@@ -527,6 +531,59 @@ struct MicroTargetsSection: View {
                 MicroTargetRow(target: target, goal: goal, userProgress: userProgress, onGoalComplete: onGoalComplete)
             }
         }
+    }
+}
+
+// MARK: - AI Reasoning Card
+struct AIReasoningCard: View {
+    let reasoning: String
+    @State private var isExpanded = true
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                    isExpanded.toggle()
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Text("🧠")
+                        .font(.subheadline)
+                    Text("Why these steps?")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.appPlum)
+                    Spacer()
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.appPlum.opacity(0.5))
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+            }
+            .accessibilityLabel(isExpanded ? "Collapse AI reasoning" : "Expand AI reasoning")
+
+            if isExpanded {
+                Divider()
+                    .background(Color.appPlum.opacity(0.1))
+                    .padding(.horizontal, 14)
+
+                Text(reasoning)
+                    .font(.subheadline)
+                    .foregroundStyle(Color.appTextSecondary)
+                    .lineSpacing(4)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .background(Color.appPlum.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.appPlum.opacity(0.15), lineWidth: 1)
+        )
     }
 }
 

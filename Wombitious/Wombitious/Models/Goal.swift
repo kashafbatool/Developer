@@ -19,6 +19,9 @@ final class Goal {
     var isCompleted: Bool
     var completedDate: Date?
     var timelineMonths: Int
+    var whyImportant: String      // reflection answer 1
+    var biggestObstacle: String   // reflection answer 2
+    var aiReasoning: String       // AI explanation of why these steps were chosen
 
     @Relationship(deleteRule: .cascade) var microTargets: [MicroTarget]
 
@@ -27,7 +30,10 @@ final class Goal {
         description: String,
         type: GoalType,
         targetDate: Date? = nil,
-        timelineMonths: Int = 3
+        timelineMonths: Int = 3,
+        whyImportant: String = "",
+        biggestObstacle: String = "",
+        aiReasoning: String = ""
     ) {
         self.id = UUID()
         self.title = title
@@ -37,6 +43,9 @@ final class Goal {
         self.targetDate = targetDate
         self.isCompleted = false
         self.timelineMonths = timelineMonths
+        self.whyImportant = whyImportant
+        self.biggestObstacle = biggestObstacle
+        self.aiReasoning = aiReasoning
         self.microTargets = []
     }
 

@@ -1,6 +1,6 @@
 //
 //  GoalCreationView.swift
-//  Wombitious
+//  SheRise
 //
 //  Created by Kashaf Batool
 //
@@ -18,6 +18,8 @@ struct GoalCreationView: View {
     @State private var goalTitle = ""
     @State private var selectedType: GoalType?
     @State private var selectedTimeline = 3
+    @State private var whyText = ""
+    @State private var obstacleText = ""
     @State private var isExtractingGoal = false
     @State private var isGeneratingTargets = false
     @State private var showError = false
@@ -29,12 +31,10 @@ struct GoalCreationView: View {
                 Color.appBackground.ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    // Step indicator
-                    StepIndicator(currentStep: currentStep, totalSteps: 3)
+                    StepIndicator(currentStep: currentStep, totalSteps: 4)
                         .padding(.horizontal)
                         .padding(.top, 8)
 
-                    // Step content
                     if currentStep == 1 {
                         DreamStepView(
                             dreamText: $dreamText,
@@ -42,6 +42,12 @@ struct GoalCreationView: View {
                             onContinue: extractGoal
                         )
                     } else if currentStep == 2 {
+                        ReflectionStepView(
+                            whyText: $whyText,
+                            obstacleText: $obstacleText,
+                            onContinue: { withAnimation { currentStep = 3 } }
+                        )
+                    } else if currentStep == 3 {
                         GoalConfirmStepView(
                             goalTitle: $goalTitle,
                             selectedType: $selectedType,
@@ -50,7 +56,9 @@ struct GoalCreationView: View {
                             isLoading: isGeneratingTargets
                         )
                     } else {
-                        GeneratingStepView()
+                        GeneratingStepView(
+                            hasReflection: !whyText.isEmpty || !obstacleText.isEmpty
+                        )
                     }
                 }
             }
@@ -81,8 +89,7 @@ struct GoalCreationView: View {
         isExtractingGoal = true
         Task {
             do {
-                let geminiService = GeminiService()
-                let suggested = try await geminiService.suggestGoalTitle(from: dreamText)
+                let suggested = try await GeminiService().suggestGoalTitle(from: dreamText)
                 await MainActor.run {
                     goalTitle = suggested
                     isExtractingGoal = false
@@ -101,26 +108,30 @@ struct GoalCreationView: View {
     func createGoal() {
         guard let type = selectedType, !goalTitle.isEmpty else { return }
         isGeneratingTargets = true
-        withAnimation { currentStep = 3 }
+        withAnimation { currentStep = 4 }
 
         Task {
             do {
-                let geminiService = GeminiService()
-                let generatedTargets = try await geminiService.generateMicroTargets(
+                let result = try await GeminiService().generateMicroTargets(
                     goalTitle: goalTitle,
                     goalDescription: dreamText,
                     goalType: type,
-                    timelineMonths: selectedTimeline
+                    timelineMonths: selectedTimeline,
+                    whyImportant: whyText,
+                    biggestObstacle: obstacleText
                 )
 
                 let newGoal = Goal(
                     title: goalTitle,
                     description: dreamText,
                     type: type,
-                    timelineMonths: selectedTimeline
+                    timelineMonths: selectedTimeline,
+                    whyImportant: whyText,
+                    biggestObstacle: obstacleText,
+                    aiReasoning: result.reasoning
                 )
 
-                for (index, targetData) in generatedTargets.enumerated() {
+                for (index, targetData) in result.targets.enumerated() {
                     let microTarget = MicroTarget(
                         title: targetData.title,
                         description: targetData.description,
@@ -141,7 +152,7 @@ struct GoalCreationView: View {
             } catch {
                 await MainActor.run {
                     isGeneratingTargets = false
-                    withAnimation { currentStep = 2 }
+                    withAnimation { currentStep = 3 }
                     errorMessage = error.localizedDescription
                     showError = true
                 }
@@ -220,13 +231,10 @@ struct DreamStepView: View {
                     HStack(spacing: 8) {
                         if isLoading {
                             ProgressView().tint(.white)
-                            Text("Reading your vision...")
-                                .fontWeight(.semibold)
+                            Text("Reading your vision...").fontWeight(.semibold)
                         } else {
-                            Text("Extract My Goal")
-                                .fontWeight(.semibold)
-                            Image(systemName: "arrow.right")
-                                .fontWeight(.semibold)
+                            Text("Extract My Goal").fontWeight(.semibold)
+                            Image(systemName: "arrow.right").fontWeight(.semibold)
                         }
                     }
                     .foregroundStyle(.white)
@@ -242,7 +250,115 @@ struct DreamStepView: View {
     }
 }
 
-// MARK: - Step 2: Confirm Goal
+// MARK: - Step 2: Reflection
+struct ReflectionStepView: View {
+    @Binding var whyText: String
+    @Binding var obstacleText: String
+    let onContinue: () -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 32) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("💭 A little about you")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.appGold)
+                        .fontWeight(.medium)
+
+                    Text("The more we understand, the more personal your plan will be")
+                        .font(.system(size: 26, weight: .bold))
+                        .foregroundStyle(Color.appPlum)
+                        .lineSpacing(4)
+
+                    Text("Both questions are optional — but your answers make a real difference.")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.appTextSecondary)
+                        .lineSpacing(3)
+                }
+
+                // Question 1
+                reflectionField(
+                    emoji: "💜",
+                    question: "Why does this goal matter to you right now?",
+                    placeholder: "e.g. I want to prove to myself I can do it, or I need this for my family...",
+                    text: $whyText
+                )
+
+                // Question 2
+                reflectionField(
+                    emoji: "🧱",
+                    question: "What's your biggest obstacle?",
+                    placeholder: "e.g. I don't have much free time, I struggle with confidence, I don't know where to start...",
+                    text: $obstacleText
+                )
+
+                VStack(spacing: 12) {
+                    Button {
+                        onContinue()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "sparkles")
+                            Text("Personalise My Plan").fontWeight(.semibold)
+                        }
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 18)
+                        .background(Color.appPlum)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+
+                    Button {
+                        onContinue()
+                    } label: {
+                        Text("Skip for now")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.appTextSecondary)
+                    }
+                }
+            }
+            .padding()
+        }
+    }
+
+    @ViewBuilder
+    private func reflectionField(emoji: String, question: String, placeholder: String, text: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Text(emoji)
+                Text(question)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.appPlum)
+            }
+
+            ZStack(alignment: .topLeading) {
+                if text.wrappedValue.isEmpty {
+                    Text(placeholder)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.appTextSecondary.opacity(0.5))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 14)
+                        .allowsHitTesting(false)
+                }
+                TextEditor(text: text)
+                    .font(.subheadline)
+                    .frame(minHeight: 90)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .scrollContentBackground(.hidden)
+            }
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(text.wrappedValue.isEmpty ? Color.appPlum.opacity(0.1) : Color.appPlum.opacity(0.35), lineWidth: 1.5)
+            )
+            .shadow(color: .black.opacity(0.03), radius: 6, y: 2)
+        }
+    }
+}
+
+// MARK: - Step 3: Confirm Goal
 struct GoalConfirmStepView: View {
     @Binding var goalTitle: String
     @Binding var selectedType: GoalType?
@@ -251,10 +367,7 @@ struct GoalConfirmStepView: View {
     let isLoading: Bool
 
     let timelineOptions: [(label: String, months: Int)] = [
-        ("1 month", 1),
-        ("3 months", 3),
-        ("6 months", 6),
-        ("1 year", 12)
+        ("1 month", 1), ("3 months", 3), ("6 months", 6), ("1 year", 12)
     ]
 
     var canContinue: Bool {
@@ -281,39 +394,24 @@ struct GoalConfirmStepView: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Your goal")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.appTextSecondary)
-                        .textCase(.uppercase)
-                        .tracking(1)
-
+                        .font(.caption).fontWeight(.semibold)
+                        .foregroundStyle(Color.appTextSecondary).textCase(.uppercase).tracking(1)
                     TextField("e.g., Land a software engineering internship", text: $goalTitle)
-                        .font(.title3)
-                        .fontWeight(.medium)
-                        .foregroundStyle(Color.appPlum)
+                        .font(.title3).fontWeight(.medium).foregroundStyle(Color.appPlum)
                         .padding(16)
                         .background(Color.white)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(Color.appPlum.opacity(0.3), lineWidth: 1.5)
-                        )
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.appPlum.opacity(0.3), lineWidth: 1.5))
                         .shadow(color: .black.opacity(0.04), radius: 8, y: 3)
                 }
 
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Category")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.appTextSecondary)
-                        .textCase(.uppercase)
-                        .tracking(1)
-
+                        .font(.caption).fontWeight(.semibold)
+                        .foregroundStyle(Color.appTextSecondary).textCase(.uppercase).tracking(1)
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                         ForEach(GoalType.allCases, id: \.self) { type in
-                            GoalTypeButton(type: type, isSelected: selectedType == type) {
-                                selectedType = type
-                            }
+                            GoalTypeButton(type: type, isSelected: selectedType == type) { selectedType = type }
                         }
                     }
                 }
@@ -321,33 +419,22 @@ struct GoalConfirmStepView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Timeline")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(Color.appTextSecondary)
-                            .textCase(.uppercase)
-                            .tracking(1)
+                            .font(.caption).fontWeight(.semibold)
+                            .foregroundStyle(Color.appTextSecondary).textCase(.uppercase).tracking(1)
                         Text("How long do you want to work on this goal?")
-                            .font(.caption)
-                            .foregroundStyle(Color.appTextSecondary)
+                            .font(.caption).foregroundStyle(Color.appTextSecondary)
                     }
-
                     HStack(spacing: 10) {
                         ForEach(timelineOptions, id: \.months) { option in
                             Button {
                                 selectedTimeline = option.months
                             } label: {
-                                Text(option.label)
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
+                                Text(option.label).font(.subheadline).fontWeight(.medium)
                                     .foregroundStyle(selectedTimeline == option.months ? .white : Color.appPlum)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 12)
+                                    .frame(maxWidth: .infinity).padding(.vertical, 12)
                                     .background(selectedTimeline == option.months ? Color.appPlum : Color.white)
                                     .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(selectedTimeline == option.months ? Color.clear : Color.appPlum.opacity(0.2), lineWidth: 1)
-                                    )
+                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(selectedTimeline == option.months ? Color.clear : Color.appPlum.opacity(0.2), lineWidth: 1))
                                     .shadow(color: selectedTimeline == option.months ? Color.appPlum.opacity(0.2) : .black.opacity(0.03), radius: 4, y: 2)
                             }
                         }
@@ -359,12 +446,10 @@ struct GoalConfirmStepView: View {
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "sparkles")
-                        Text("Generate My Action Steps")
-                            .fontWeight(.semibold)
+                        Text("Generate My Action Steps").fontWeight(.semibold)
                     }
                     .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
+                    .frame(maxWidth: .infinity).padding(.vertical, 18)
                     .background(canContinue ? Color.appPlum : Color.appPlum.opacity(0.3))
                     .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
@@ -375,39 +460,34 @@ struct GoalConfirmStepView: View {
     }
 }
 
-// MARK: - Step 3: Generating
+// MARK: - Step 4: Generating
 struct GeneratingStepView: View {
+    let hasReflection: Bool
+
     var body: some View {
         VStack(spacing: 32) {
             Spacer()
 
             ZStack {
-                Circle()
-                    .fill(Color.appPlum.opacity(0.07))
-                    .frame(width: 160, height: 160)
-                Circle()
-                    .fill(Color.appPlum.opacity(0.1))
-                    .frame(width: 120, height: 120)
-                Text("✨")
-                    .font(.system(size: 52))
+                Circle().fill(Color.appPlum.opacity(0.07)).frame(width: 160, height: 160)
+                Circle().fill(Color.appPlum.opacity(0.1)).frame(width: 120, height: 120)
+                Text("✨").font(.system(size: 52))
             }
 
             VStack(spacing: 12) {
-                Text("Creating your plan...")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundStyle(Color.appPlum)
+                Text("Building your plan...")
+                    .font(.title2).fontWeight(.bold).foregroundStyle(Color.appPlum)
 
-                Text("We're turning your dream into\nactionable steps just for you")
+                Text(hasReflection
+                     ? "Personalising your steps based on what you shared..."
+                     : "Turning your dream into actionable steps just for you")
                     .font(.subheadline)
                     .foregroundStyle(Color.appTextSecondary)
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)
             }
 
-            ProgressView()
-                .tint(Color.appGold)
-                .scaleEffect(1.5)
+            ProgressView().tint(Color.appGold).scaleEffect(1.5)
 
             Spacer()
         }
@@ -421,6 +501,15 @@ struct GoalTypeButton: View {
     let isSelected: Bool
     let action: () -> Void
 
+    var colorForType: Color {
+        switch type {
+        case .career: return .blue
+        case .education: return .purple
+        case .financial: return .green
+        case .personal: return Color.appCoral
+        }
+    }
+
     var body: some View {
         Button(action: action) {
             VStack(spacing: 10) {
@@ -433,28 +522,14 @@ struct GoalTypeButton: View {
                         .foregroundStyle(isSelected ? .white : colorForType)
                 }
                 Text(type.rawValue)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+                    .font(.subheadline).fontWeight(.medium)
                     .foregroundStyle(isSelected ? .white : Color.appPlum)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 18)
+            .frame(maxWidth: .infinity).padding(.vertical, 18)
             .background(isSelected ? Color.appPlum : Color.white)
             .clipShape(RoundedRectangle(cornerRadius: 16))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(isSelected ? Color.clear : Color(red: 0.90, green: 0.90, blue: 0.92), lineWidth: 1)
-            )
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(isSelected ? Color.clear : Color(red: 0.90, green: 0.90, blue: 0.92), lineWidth: 1))
             .shadow(color: isSelected ? Color.appPlum.opacity(0.25) : .black.opacity(0.04), radius: 8, y: 3)
-        }
-    }
-
-    var colorForType: Color {
-        switch type {
-        case .career: return .blue
-        case .education: return .purple
-        case .financial: return .green
-        case .personal: return Color.appCoral
         }
     }
 }
