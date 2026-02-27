@@ -8,7 +8,7 @@
 import Foundation
 
 struct GeminiService {
-    private let apiKey = "YOUR_GEMINI_API_KEY_HERE"
+    private let apiKey = Secrets.geminiAPIKey
     private let apiURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
 
     struct MicroTargetData {
