@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+    @EnvironmentObject var authManager: AuthManager
     @Environment(\.modelContext) private var modelContext
     @Query private var goals: [Goal]
     @Query private var userProgress: [UserProgress]
@@ -25,6 +26,15 @@ struct ContentView: View {
     }
 
     var body: some View {
+        if !authManager.isAuthenticated {
+            AuthView()
+                .transition(.opacity)
+        } else {
+            mainTabView
+        }
+    }
+
+    private var mainTabView: some View {
         TabView {
             // Home/Dashboard
             DashboardView(goals: goals, userProgress: currentProgress)
@@ -70,5 +80,6 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .environmentObject(AuthManager())
         .modelContainer(for: [Goal.self, UserProgress.self, Story.self, JournalEntry.self, VisionItem.self])
 }

@@ -11,6 +11,8 @@ import TipKit
 
 @main
 struct SheRiseApp: App {
+    @StateObject private var authManager = AuthManager()
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Goal.self,
@@ -38,6 +40,7 @@ struct SheRiseApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(authManager)
                 .task {
                     // Configure TipKit — show tips once per user in production
                     try? Tips.configure([
