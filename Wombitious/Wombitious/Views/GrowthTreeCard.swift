@@ -27,7 +27,7 @@ struct GrowthTreeCard: View {
         case 0..<0.25:   return "Sprouting 🌱"
         case 0.25..<0.5: return "Growing 🌿"
         case 0.5..<0.75: return "Thriving 🌳"
-        case 0.75..<1.0: return "Almost there 🌲"
+        case 0.75..<1.0: return "Almost there 🌺"
         default:         return "In Full Bloom 🌸"
         }
     }
@@ -51,8 +51,11 @@ struct GrowthTreeCard: View {
                     .clipShape(Capsule())
             }
 
+            // Frame is 180 pt — tree is always fully drawn (ghost outline),
+            // colours paint in progressively as goals are completed.
             TreeView(progress: appeared ? progress : 0)
-                .frame(height: 130)
+                .frame(height: 180)
+                .animation(.spring(response: 0.9, dampingFraction: 0.72), value: progress)
 
             HStack {
                 statPill(value: "\(confidenceScore)", label: "confidence")
@@ -72,7 +75,6 @@ struct GrowthTreeCard: View {
             }
         }
         .onChange(of: completedCount) { _, _ in
-            // Pulse when a new step is completed
             withAnimation(.spring(response: 0.6, dampingFraction: 0.65)) { }
         }
     }
@@ -88,127 +90,219 @@ struct GrowthTreeCard: View {
     }
 }
 
-// MARK: - Tree drawing
+// MARK: - Tree canvas
 
 struct TreeView: View {
     let progress: Double
 
     var body: some View {
-        GeometryReader { geo in
-            let cx = geo.size.width / 2
-            let h  = geo.size.height
-            let bottom = h - 6
+        Canvas { ctx, size in
+            let cx  = size.width / 2
+            let bot = size.height - 8   // ground anchor (canvas y, increases downward)
 
-            ZStack {
-                // Ground
-                Capsule()
-                    .fill(Color.appPlum.opacity(0.10))
-                    .frame(width: 80, height: 5)
-                    .position(x: cx, y: bottom)
+            // ── Key tree points ────────────────────────────────────────────
+            let trunkBase = CGPoint(x: cx, y: bot)
+            let trunkTop  = CGPoint(x: cx, y: bot - 78)
+            let lFork     = CGPoint(x: cx, y: bot - 50)   // lower branch fork
+            let mFork     = CGPoint(x: cx, y: bot - 63)   // mid fork
 
-                // Trunk
-                if progress > 0 {
-                    let trunkH = h * 0.42 * min(progress * 5, 1)
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color(red: 0.40, green: 0.26, blue: 0.10))
-                        .frame(width: 10, height: trunkH)
-                        .position(x: cx, y: bottom - trunkH / 2)
-                        .animation(.spring(response: 0.9, dampingFraction: 0.7), value: progress)
+            // Main branch tips
+            let bl1  = CGPoint(x: cx - 60, y: bot - 76)
+            let br1  = CGPoint(x: cx + 60, y: bot - 76)
+            let bl2  = CGPoint(x: cx - 42, y: bot - 90)
+            let br2  = CGPoint(x: cx + 42, y: bot - 90)
+            let bl3  = CGPoint(x: cx - 18, y: bot - 97)
+            let br3  = CGPoint(x: cx + 18, y: bot - 97)
+            let bTop = CGPoint(x: cx,      y: bot - 116)
+
+            // Sub-branch tips — these are the leaf / flower centres
+            let sbl1a = CGPoint(x: cx - 78, y: bot - 95)
+            let sbl1b = CGPoint(x: cx - 52, y: bot - 100)
+            let sbr1a = CGPoint(x: cx + 78, y: bot - 95)
+            let sbr1b = CGPoint(x: cx + 52, y: bot - 100)
+            let sbl2a = CGPoint(x: cx - 57, y: bot - 113)
+            let sbl2b = CGPoint(x: cx - 33, y: bot - 116)
+            let sbr2a = CGPoint(x: cx + 57, y: bot - 113)
+            let sbr2b = CGPoint(x: cx + 33, y: bot - 116)
+            let sbl3  = CGPoint(x: cx - 27, y: bot - 122)
+            let sbr3  = CGPoint(x: cx + 27, y: bot - 122)
+            let sbta  = CGPoint(x: cx - 17, y: bot - 136)
+            let sbtb  = CGPoint(x: cx + 17, y: bot - 136)
+
+            // Leaf positions (all sub-branch tips)
+            let leafPts: [CGPoint] = [
+                sbl1a, sbl1b, sbr1a, sbr1b,
+                sbl2a, sbl2b, sbr2a, sbr2b,
+                sbl3,  sbr3,  sbta,  sbtb
+            ]
+            // Leaf colours (alternating two greens for depth)
+            let leafColors: [Color] = [
+                .appPlum, .appCoral, .appPlum, .appCoral,
+                .appCoral, .appPlum, .appCoral, .appPlum,
+                .appPlum,  .appPlum, .appCoral, .appCoral
+            ]
+            // Flower positions — the outermost/topmost clusters
+            let flowerPts: [CGPoint] = [sbl1a, sbr1a, sbl2a, sbr2a, sbta, sbtb]
+
+            // Line data as (from, to, lineWidth)
+            let mainLines: [(CGPoint, CGPoint, CGFloat)] = [
+                (lFork,    bl1,  7), (lFork,    br1,  7),
+                (mFork,    bl2,  6), (mFork,    br2,  6),
+                (trunkTop, bl3,  5), (trunkTop, br3,  5),
+                (trunkTop, bTop, 5)
+            ]
+            let subLines: [(CGPoint, CGPoint, CGFloat)] = [
+                (bl1,  sbl1a, 4),   (bl1,  sbl1b, 4),
+                (br1,  sbr1a, 4),   (br1,  sbr1b, 4),
+                (bl2,  sbl2a, 3.5), (bl2,  sbl2b, 3.5),
+                (br2,  sbr2a, 3.5), (br2,  sbr2b, 3.5),
+                (bl3,  sbl3,  3),   (br3,  sbr3,  3),
+                (bTop, sbta,  3),   (bTop, sbtb,  3)
+            ]
+
+            // ── Progress alphas ────────────────────────────────────────────
+            // Each stage fades in over its span window
+            let tA  = stageAlpha(progress, start: 0.00, span: 0.22)  // trunk
+            let bA  = stageAlpha(progress, start: 0.18, span: 0.28)  // branches
+            let lA  = stageAlpha(progress, start: 0.44, span: 0.30)  // leaves
+            let fA  = stageAlpha(progress, start: 0.72, span: 0.26)  // flowers
+
+            let ghost    = Color(white: 0.84)                         // always-visible outline
+            let brown    = Color(red: 0.40, green: 0.26, blue: 0.10) // trunk & branches
+            let cream    = Color(red: 0.996, green: 0.996, blue: 0.890)
+
+            // ── Pass 1: ghost — complete tree, light gray, always visible ──
+
+            // Ground oval
+            ctx.fill(
+                Path(ellipseIn: CGRect(x: cx - 46, y: bot - 2, width: 92, height: 6)),
+                with: .color(ghost)
+            )
+
+            // Trunk ghost (tapered: drawn as two overlapping strokes)
+            treeStroke(&ctx, from: trunkBase, to: trunkTop, w: 16, color: ghost)
+            treeStroke(&ctx, from: trunkBase, to: trunkTop, w: 10, color: ghost)
+
+            // Root ghosts
+            treeStroke(&ctx,
+                from: CGPoint(x: cx - 4, y: bot - 2),
+                to:   CGPoint(x: cx - 24, y: bot + 4), w: 7, color: ghost)
+            treeStroke(&ctx,
+                from: CGPoint(x: cx + 4, y: bot - 2),
+                to:   CGPoint(x: cx + 24, y: bot + 4), w: 7, color: ghost)
+
+            // Branch ghosts
+            for (f, t, w) in mainLines + subLines {
+                treeStroke(&ctx, from: f, to: t, w: w, color: ghost)
+            }
+
+            // Leaf cluster ghosts
+            for pt in leafPts {
+                ctx.fill(leafCluster(at: pt, r: 15), with: .color(ghost))
+            }
+
+            // Flower ghosts
+            for pt in flowerPts {
+                ctx.fill(flowerPetals(at: pt, petalR: 4.5, dist: 6.5), with: .color(ghost))
+                ctx.fill(flowerCentre(at: pt), with: .color(ghost))
+            }
+
+            // ── Pass 2: colour — fills in progressively ────────────────────
+
+            // Trunk coloured
+            if tA > 0 {
+                treeStroke(&ctx, from: trunkBase, to: trunkTop, w: 16, color: brown.opacity(tA))
+                treeStroke(&ctx, from: trunkBase, to: trunkTop, w: 10, color: brown.opacity(tA * 0.7))
+                treeStroke(&ctx,
+                    from: CGPoint(x: cx - 4, y: bot - 2),
+                    to:   CGPoint(x: cx - 24, y: bot + 4), w: 7, color: brown.opacity(tA))
+                treeStroke(&ctx,
+                    from: CGPoint(x: cx + 4, y: bot - 2),
+                    to:   CGPoint(x: cx + 24, y: bot + 4), w: 7, color: brown.opacity(tA))
+            }
+
+            // Branches coloured
+            if bA > 0 {
+                for (f, t, w) in mainLines + subLines {
+                    treeStroke(&ctx, from: f, to: t, w: w, color: brown.opacity(bA))
                 }
+            }
 
-                // Lower branches + leaves  (25%+)
-                if progress > 0.20 {
-                    let s = min((progress - 0.20) / 0.25, 1.0)
-                    let branchY = bottom - h * 0.42 * 0.65
-                    branch(cx: cx, y: branchY, angleDeg: -140, len: 34 * s)
-                    branch(cx: cx, y: branchY, angleDeg: -40,  len: 34 * s)
-
-                    if s > 0.3 {
-                        let ls = min((s - 0.3) / 0.7, 1.0)
-                        leafCluster(color: Color.appCoral, size: 36 * ls)
-                            .position(x: cx - 32, y: branchY - 14 * ls)
-                        leafCluster(color: Color.appPlum, size: 36 * ls)
-                            .position(x: cx + 32, y: branchY - 14 * ls)
-                    }
+            // Leaves coloured
+            if lA > 0 {
+                for (i, pt) in leafPts.enumerated() {
+                    ctx.fill(leafCluster(at: pt, r: 15),
+                             with: .color(leafColors[i].opacity(lA)))
                 }
-
-                // Mid branches + leaves  (50%+)
-                if progress > 0.45 {
-                    let s = min((progress - 0.45) / 0.25, 1.0)
-                    let topY = bottom - h * 0.42
-                    branch(cx: cx, y: topY + 6, angleDeg: -155, len: 26 * s)
-                    branch(cx: cx, y: topY + 6, angleDeg: -25,  len: 26 * s)
-
-                    if s > 0.4 {
-                        let ls = min((s - 0.4) / 0.6, 1.0)
-                        leafCluster(color: Color.appPlum, size: 30 * ls)
-                            .position(x: cx - 24, y: topY - 10 * ls)
-                        leafCluster(color: Color.appCoral, size: 30 * ls)
-                            .position(x: cx + 24, y: topY - 10 * ls)
-                    }
+                // A lighter highlight layer on each cluster
+                for (i, pt) in leafPts.enumerated() {
+                    ctx.fill(leafCluster(at: pt, r: 9),
+                             with: .color(leafColors[i].mix(with: .white, by: 0.3).opacity(lA * 0.6)))
                 }
+            }
 
-                // Crown canopy  (70%+)
-                if progress > 0.65 {
-                    let s = min((progress - 0.65) / 0.25, 1.0)
-                    let topY = bottom - h * 0.42
-                    leafCluster(color: Color.appPlum, size: 48 * s, dense: true)
-                        .position(x: cx, y: topY - 22 * s)
-                }
-
-                // Full bloom sparkles  (100%)
-                if progress >= 1.0 {
-                    let topY = bottom - h * 0.42
-                    Text("🌸").font(.caption).position(x: cx - 28, y: topY - 34)
-                    Text("✨").font(.caption2).position(x: cx + 30, y: topY - 28)
-                    Text("🌸").font(.caption2).position(x: cx + 8,  y: topY - 48)
+            // Flowers coloured
+            if fA > 0 {
+                for pt in flowerPts {
+                    ctx.fill(flowerPetals(at: pt, petalR: 4.5, dist: 6.5),
+                             with: .color(Color.appGold.opacity(fA)))
+                    ctx.fill(flowerCentre(at: pt),
+                             with: .color(cream.opacity(fA)))
                 }
             }
         }
     }
+}
 
-    // A single branch drawn as a rotated capsule
-    @ViewBuilder
-    private func branch(cx: CGFloat, y: CGFloat, angleDeg: Double, len: Double) -> some View {
-        let rad = angleDeg * .pi / 180
-        let endX = cx + CGFloat(cos(rad)) * len
-        let endY = y  + CGFloat(sin(rad)) * len
-        let midX = (cx + endX) / 2
-        let midY = (y  + endY) / 2
-        let dist = sqrt(pow(endX - cx, 2) + pow(endY - y, 2))
+// MARK: - Canvas helpers (file-private, no inout capture needed)
 
-        Capsule()
-            .fill(Color(red: 0.40, green: 0.26, blue: 0.10))
-            .frame(width: dist, height: 5)
-            .rotationEffect(.radians(atan2(endY - y, endX - cx)))
-            .position(x: midX, y: midY)
-            .animation(.spring(response: 0.7, dampingFraction: 0.7), value: len)
+/// Stroke a line segment with round caps.
+private func treeStroke(
+    _ ctx: inout GraphicsContext,
+    from: CGPoint, to: CGPoint,
+    w: CGFloat, color: Color
+) {
+    var p = Path()
+    p.move(to: from)
+    p.addLine(to: to)
+    ctx.stroke(p, with: .color(color),
+               style: StrokeStyle(lineWidth: w, lineCap: .round, lineJoin: .round))
+}
+
+/// Three overlapping ellipses give an organic leaf-cluster silhouette.
+private func leafCluster(at centre: CGPoint, r: CGFloat) -> Path {
+    var p = Path()
+    // Wide horizontal blob
+    p.addEllipse(in: CGRect(x: centre.x - r,       y: centre.y - r * 0.65,
+                            width: r * 2,           height: r * 1.30))
+    // Tall vertical blob (upper portion)
+    p.addEllipse(in: CGRect(x: centre.x - r * 0.75, y: centre.y - r * 1.25,
+                            width: r * 1.50,         height: r * 1.50))
+    // Lower filler blob
+    p.addEllipse(in: CGRect(x: centre.x - r * 0.60, y: centre.y - r * 0.20,
+                            width: r * 1.20,         height: r * 0.90))
+    return p
+}
+
+/// Five petal circles arranged in a ring.
+private func flowerPetals(at centre: CGPoint, petalR: CGFloat, dist: CGFloat) -> Path {
+    var p = Path()
+    for i in 0..<5 {
+        let angle = Double(i) * 72.0 * .pi / 180.0 - .pi / 2
+        let px = centre.x + CGFloat(cos(angle)) * dist
+        let py = centre.y + CGFloat(sin(angle)) * dist
+        p.addEllipse(in: CGRect(x: px - petalR, y: py - petalR,
+                                width: petalR * 2, height: petalR * 2))
     }
+    return p
+}
 
-    // A cluster of overlapping ellipses
-    @ViewBuilder
-    private func leafCluster(color: Color, size: Double, dense: Bool = false) -> some View {
-        let s = max(0, size)
-        ZStack {
-            Ellipse()
-                .fill(color.opacity(0.82))
-                .frame(width: s * 0.90, height: s * 0.70)
-                .offset(x: -s * 0.12)
-            Ellipse()
-                .fill(color.opacity(0.70))
-                .frame(width: s * 0.72, height: s * 0.88)
-                .offset(x: s * 0.18, y: -s * 0.08)
-            if dense {
-                Ellipse()
-                    .fill(color.opacity(0.60))
-                    .frame(width: s * 0.55, height: s * 0.55)
-                    .offset(y: -s * 0.22)
-                Ellipse()
-                    .fill(Color.appGold.opacity(0.25))
-                    .frame(width: s * 0.40, height: s * 0.40)
-                    .offset(x: -s * 0.05, y: s * 0.10)
-            }
-        }
-        .animation(.spring(response: 0.6, dampingFraction: 0.65), value: s)
-    }
+/// Small circle for the flower centre.
+private func flowerCentre(at centre: CGPoint) -> Path {
+    Path(ellipseIn: CGRect(x: centre.x - 3, y: centre.y - 3, width: 6, height: 6))
+}
+
+/// Clamp progress into a 0…1 alpha for a given stage window.
+private func stageAlpha(_ progress: Double, start: Double, span: Double) -> Double {
+    max(0, min((progress - start) / span, 1))
 }
