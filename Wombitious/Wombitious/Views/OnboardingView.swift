@@ -22,7 +22,7 @@ struct OnboardingView: View {
             icon: "sparkles",
             title: "AI Breaks It\nDown For You",
             description: "Share your big goal and our AI generates 5-7 specific, actionable steps tailored just for you.",
-            color: Color(red: 0.31, green: 0.14, blue: 0.50)
+            color: Color.appCoral
         ),
         OnboardingPage(
             icon: "chart.line.uptrend.xyaxis",
@@ -34,7 +34,7 @@ struct OnboardingView: View {
             icon: "heart.fill",
             title: "Get Inspired\nEvery Day",
             description: "Read real stories from ambitious women who turned their dreams into reality.",
-            color: Color(red: 0.31, green: 0.14, blue: 0.50)
+            color: Color.appCoral
         )
     ]
 

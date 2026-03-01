@@ -495,7 +495,7 @@ struct BadgeCard: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(isEarned ? Color.white : Color(red: 0.94, green: 0.94, blue: 0.96))
+        .background(isEarned ? Color.white : Color(red: 0.91, green: 0.95, blue: 0.92))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)

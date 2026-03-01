@@ -9,10 +9,10 @@ import PhotosUI
 
 private let quoteBackgrounds: [Color] = [
     Color.appPlum,
-    Color(red: 0.90, green: 0.45, blue: 0.45),
-    Color(red: 0.20, green: 0.18, blue: 0.38),
-    Color(red: 0.55, green: 0.35, blue: 0.70),
-    Color(red: 0.18, green: 0.45, blue: 0.40),
+    Color(red: 0.17, green: 0.43, blue: 0.29),
+    Color(red: 0.11, green: 0.28, blue: 0.19),
+    Color.appCoral,
+    Color(red: 0.22, green: 0.50, blue: 0.35),
 ]
 
 // MARK: - Main View
@@ -507,7 +507,7 @@ struct AddVisionItemSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(red: 0.10, green: 0.08, blue: 0.15).ignoresSafeArea()
+                Color(red: 0.08, green: 0.20, blue: 0.12).ignoresSafeArea()
 
                 ScrollView {
                     VStack(spacing: 24) {
