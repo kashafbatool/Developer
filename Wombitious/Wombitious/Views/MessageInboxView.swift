@@ -293,6 +293,10 @@ struct ComposeMessageSheet: View {
     @State private var senderName = ""
     @State private var messageContent = ""
     @State private var sent = false
+    @State private var isChecking = false
+    @State private var blockedError = ""
+
+    private let gemini = GeminiService()
 
     var canSend: Bool {
         !senderName.trimmingCharacters(in: .whitespaces).isEmpty
@@ -358,16 +362,39 @@ struct ComposeMessageSheet: View {
                         .fieldStyle()
                     }
 
-                    Button { sendMessage() } label: {
-                        Text("Send with love 💛")
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(canSend ? Color.appPlum : Color.appTextSecondary.opacity(0.3))
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    if !blockedError.isEmpty {
+                        Text(blockedError)
+                            .font(.subheadline)
+                            .foregroundStyle(Color(red: 0.75, green: 0.20, blue: 0.20))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 4)
+                            .transition(.opacity.combined(with: .scale(scale: 0.95)))
                     }
-                    .disabled(!canSend)
+
+                    Button {
+                        Task { await sendWithModeration() }
+                    } label: {
+                        Group {
+                            if isChecking {
+                                HStack(spacing: 10) {
+                                    ProgressView()
+                                        .tint(.white)
+                                        .scaleEffect(0.85)
+                                    Text("Checking message…")
+                                        .fontWeight(.semibold)
+                                }
+                            } else {
+                                Text("Send with love 💛")
+                                    .fontWeight(.semibold)
+                            }
+                        }
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(canSend && !isChecking ? Color.appPlum : Color.appTextSecondary.opacity(0.3))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    .disabled(!canSend || isChecking)
                 }
             }
             .padding(20)
@@ -473,13 +500,26 @@ struct ComposeMessageSheet: View {
         }
     }
 
-    private func sendMessage() {
-        let msg = Message(
-            senderName: senderName.trimmingCharacters(in: .whitespaces),
-            content: messageContent.trimmingCharacters(in: .whitespaces)
-        )
-        modelContext.insert(msg)
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.78)) { sent = true }
+    @MainActor
+    private func sendWithModeration() async {
+        withAnimation { blockedError = "" }
+        isChecking = true
+        defer { isChecking = false }
+
+        let isSafe = await gemini.moderateMessage(messageContent.trimmingCharacters(in: .whitespaces))
+
+        if isSafe {
+            let msg = Message(
+                senderName: senderName.trimmingCharacters(in: .whitespaces),
+                content: messageContent.trimmingCharacters(in: .whitespaces)
+            )
+            modelContext.insert(msg)
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.78)) { sent = true }
+        } else {
+            withAnimation(.spring(response: 0.4)) {
+                blockedError = "This message couldn't be sent — please keep notes kind and supportive 💛"
+            }
+        }
     }
 }
 
