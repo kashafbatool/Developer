@@ -10,11 +10,11 @@ import SwiftData
 import PhotosUI
 
 private let quoteBackgrounds: [Color] = [
-    Color.appPlum,
-    Color(red: 0.90, green: 0.45, blue: 0.45),   // coral-red
-    Color(red: 0.20, green: 0.18, blue: 0.38),   // deep navy
-    Color(red: 0.55, green: 0.35, blue: 0.70),   // violet
-    Color(red: 0.18, green: 0.45, blue: 0.40),   // teal
+    Color.appPlum,                               // #2C6E49 deep green
+    Color(red: 0.17, green: 0.43, blue: 0.29),  // dark forest green
+    Color(red: 0.11, green: 0.28, blue: 0.19),  // very dark green
+    Color.appCoral,                              // #4C956C secondary green
+    Color(red: 0.22, green: 0.50, blue: 0.35),  // mid green
 ]
 
 struct VisionBoardView: View {
@@ -30,7 +30,7 @@ struct VisionBoardView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(red: 0.10, green: 0.08, blue: 0.15).ignoresSafeArea()
+                Color(red: 0.08, green: 0.20, blue: 0.12).ignoresSafeArea()
 
                 if items.isEmpty {
                     VisionBoardEmptyState(showAdd: $showAddSheet)
@@ -137,7 +137,7 @@ struct AddVisionItemSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(red: 0.10, green: 0.08, blue: 0.15).ignoresSafeArea()
+                Color(red: 0.08, green: 0.20, blue: 0.12).ignoresSafeArea()
 
                 ScrollView {
                     VStack(spacing: 24) {

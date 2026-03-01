@@ -8,9 +8,9 @@
 import SwiftUI
 
 extension Color {
-    static let appBackground    = Color(red: 0.98, green: 0.97, blue: 0.95) // warm cream
-    static let appPlum          = Color(red: 0.24, green: 0.10, blue: 0.37) // deep plum
-    static let appGold          = Color(red: 0.79, green: 0.67, blue: 0.43) // warm gold
-    static let appCoral         = Color(red: 0.91, green: 0.66, blue: 0.49) // soft coral
-    static let appTextSecondary = Color(red: 0.55, green: 0.49, blue: 0.56) // muted purple-grey
+    static let appBackground    = Color(red: 0.996, green: 0.996, blue: 0.890) // #FEFEE3 warm cream-green
+    static let appPlum          = Color(red: 0.173, green: 0.431, blue: 0.286) // #2C6E49 deep green (primary)
+    static let appGold          = Color(red: 0.839, green: 0.549, blue: 0.271) // #D68C45 amber accent
+    static let appCoral         = Color(red: 0.298, green: 0.584, blue: 0.424) // #4C956C secondary green
+    static let appTextSecondary = Color(red: 0.353, green: 0.439, blue: 0.376) // muted sage
 }

@@ -11,11 +11,11 @@ import TipKit
 
 // MARK: - Tape style definitions
 private let tapeColors: [Color] = [
-    Color(red: 0.99, green: 0.87, blue: 0.40),  // yellow
-    Color(red: 0.98, green: 0.72, blue: 0.78),  // pink
-    Color(red: 0.72, green: 0.84, blue: 0.98),  // blue
-    Color(red: 0.72, green: 0.94, blue: 0.80),  // mint
-    Color(red: 0.85, green: 0.78, blue: 0.98),  // lavender
+    Color(red: 0.98, green: 0.82, blue: 0.55),  // amber-warm (appGold tint)
+    Color(red: 0.78, green: 0.92, blue: 0.82),  // light sage green
+    Color(red: 0.72, green: 0.88, blue: 0.76),  // soft mint green
+    Color(red: 0.90, green: 0.95, blue: 0.72),  // yellow-green
+    Color(red: 0.63, green: 0.84, blue: 0.72),  // medium sage
 ]
 private let tapeRotations: [Double] = [-4, 5, -6, 3, -3]
 private let tapeWidths: [CGFloat] = [52, 44, 56, 48, 50]
@@ -156,7 +156,7 @@ struct JournalEntryCard: View {
 
                 Text(entry.content)
                     .font(.body)
-                    .foregroundStyle(Color(red: 0.2, green: 0.15, blue: 0.25))
+                    .foregroundStyle(Color(red: 0.12, green: 0.22, blue: 0.16))
                     .lineSpacing(5)
                     .lineLimit(8)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -227,7 +227,7 @@ struct NewJournalEntrySheet: View {
                                         }
                                         TextEditor(text: $content)
                                             .font(.body)
-                                            .foregroundStyle(Color(red: 0.2, green: 0.15, blue: 0.25))
+                                            .foregroundStyle(Color(red: 0.12, green: 0.22, blue: 0.16))
                                             .scrollContentBackground(.hidden)
                                             .background(.clear)
                                             .frame(minHeight: 200)
