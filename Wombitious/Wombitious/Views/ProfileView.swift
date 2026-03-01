@@ -12,6 +12,7 @@ import Charts
 struct ProfileView: View {
     let userProgress: UserProgress
     @State private var showEditProfile = false
+    @Query(filter: #Predicate<Goal> { $0.isCompleted }) private var completedGoals: [Goal]
 
     var body: some View {
         NavigationStack {
@@ -23,6 +24,7 @@ struct ProfileView: View {
                         AvatarHeader(userProgress: userProgress, showEdit: $showEditProfile)
                         RankCard(userProgress: userProgress)
                         StatsRow(userProgress: userProgress)
+                        ForestSection(completedGoals: completedGoals)
                         WeeklyProgressChart(userProgress: userProgress)
                         ActivityHeatmap(userProgress: userProgress)
                         StreakFreezeSection(userProgress: userProgress)
@@ -532,6 +534,92 @@ struct MotivationalQuoteCard: View {
         .background(Color.appPlum)
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .shadow(color: Color.appPlum.opacity(0.25), radius: 12, y: 6)
+    }
+}
+
+// MARK: - Forest Section
+
+struct ForestSection: View {
+    let completedGoals: [Goal]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("MY FOREST")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.appGold)
+                    .tracking(1.5)
+                Spacer()
+                if !completedGoals.isEmpty {
+                    Text("\(completedGoals.count) \(completedGoals.count == 1 ? "tree" : "trees") grown")
+                        .font(.caption)
+                        .foregroundStyle(Color.appTextSecondary)
+                }
+            }
+
+            if completedGoals.isEmpty {
+                emptyForest
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .bottom, spacing: 20) {
+                        ForEach(completedGoals) { goal in
+                            MiniTreeView(goal: goal)
+                        }
+                    }
+                    .padding(.horizontal, 4)
+                    .padding(.bottom, 4)
+                }
+            }
+        }
+        .padding(20)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .shadow(color: Color.appPlum.opacity(0.08), radius: 12, y: 4)
+    }
+
+    private var emptyForest: some View {
+        HStack(spacing: 14) {
+            Text("🌱")
+                .font(.title2)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Your forest is waiting")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.appPlum)
+                Text("Complete a goal to plant your first tree here")
+                    .font(.caption)
+                    .foregroundStyle(Color.appTextSecondary)
+            }
+            Spacer()
+        }
+        .padding(.vertical, 6)
+    }
+}
+
+struct MiniTreeView: View {
+    let goal: Goal
+    @State private var appeared = false
+
+    var body: some View {
+        VStack(spacing: 6) {
+            TreeView(progress: appeared ? 1.0 : 0)
+                .frame(width: 64, height: 80)
+                .scaleEffect(appeared ? 1 : 0.4)
+
+            Text(goal.title)
+                .font(.caption2)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.appPlum)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .frame(width: 64)
+        }
+        .onAppear {
+            withAnimation(.spring(response: 1.0, dampingFraction: 0.7).delay(0.1)) {
+                appeared = true
+            }
+        }
     }
 }
 

@@ -12,7 +12,7 @@ struct GrowthTreeCard: View {
     let confidenceScore: Int
     @State private var appeared = false
 
-    private var allTargets: [MicroTarget] { goals.flatMap { $0.microTargets } }
+    private var allTargets: [MicroTarget] { goals.filter { !$0.isCompleted }.flatMap { $0.microTargets } }
     private var completedCount: Int { allTargets.filter { $0.isCompleted }.count }
     private var totalCount: Int { allTargets.count }
 
@@ -90,7 +90,7 @@ struct GrowthTreeCard: View {
 
 // MARK: - Tree drawing
 
-private struct TreeView: View {
+struct TreeView: View {
     let progress: Double
 
     var body: some View {
