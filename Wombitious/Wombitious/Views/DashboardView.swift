@@ -14,10 +14,14 @@ struct DashboardView: View {
     let goals: [Goal]
     let userProgress: UserProgress
 
+    @Query(sort: \Message.createdDate, order: .reverse) private var messages: [Message]
     @State private var showGoalCreation = false
     @State private var showCheckIn = false
+    @State private var showMessageInbox = false
     @State private var completedGoal: Goal?
     @State private var lockedFocusID: UUID?
+
+    var unreadMessages: [Message] { messages.filter { !$0.isRead } }
 
     private let focusTip = FocusTip()
     private let createGoalTip = CreateGoalTip()
@@ -54,6 +58,13 @@ struct DashboardView: View {
                 ScrollView {
                     VStack(spacing: 20) {
                         GreetingHeader(energyLevel: userProgress.todayEnergyLevel)
+
+                        if !unreadMessages.isEmpty {
+                            MessageNotificationCard(
+                                unreadCount: unreadMessages.count,
+                                onTap: { showMessageInbox = true }
+                            )
+                        }
 
                         if userProgress.momentumMultiplier > 1.0 {
                             MomentumBanner(streak: userProgress.currentStreak)
@@ -108,6 +119,30 @@ struct DashboardView: View {
                     }
                     .accessibilityLabel("Create new goal")
                 }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showMessageInbox = true
+                    } label: {
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: "envelope")
+                                .fontWeight(.semibold)
+                                .foregroundStyle(Color.appPlum)
+                                .padding(8)
+                                .background(Color.appPlum.opacity(0.1))
+                                .clipShape(Circle())
+                            if !unreadMessages.isEmpty {
+                                Circle()
+                                    .fill(Color.appGold)
+                                    .frame(width: 9, height: 9)
+                                    .offset(x: 2, y: -2)
+                            }
+                        }
+                    }
+                    .accessibilityLabel("Messages")
+                }
+            }
+            .sheet(isPresented: $showMessageInbox) {
+                MessageInboxView()
             }
             .sheet(isPresented: $showGoalCreation) {
                 GoalCreationView(showGoalCreation: $showGoalCreation)
@@ -757,7 +792,64 @@ struct EmptyGoalState: View {
     }
 }
 
+// MARK: - Message Notification Card
+
+struct MessageNotificationCard: View {
+    let unreadCount: Int
+    let onTap: () -> Void
+
+    @State private var bounce = false
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 14) {
+                Text("💌")
+                    .font(.system(size: 30))
+                    .offset(y: bounce ? -4 : 4)
+                    .animation(
+                        .easeInOut(duration: 1.35).repeatForever(autoreverses: true),
+                        value: bounce
+                    )
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(unreadCount == 1
+                         ? "Someone left you a note ✨"
+                         : "\(unreadCount) notes waiting for you ✨")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.appPlum)
+                    Text("Tap to read")
+                        .font(.caption)
+                        .foregroundStyle(Color.appGold)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.appPlum.opacity(0.4))
+            }
+            .padding(16)
+            .background(
+                LinearGradient(
+                    colors: [Color.appGold.opacity(0.13), Color.appCoral.opacity(0.07)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.appGold.opacity(0.45), lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(.plain)
+        .onAppear { bounce = true }
+    }
+}
+
 #Preview {
     DashboardView(goals: [], userProgress: UserProgress())
-        .modelContainer(for: [Goal.self, UserProgress.self])
+        .modelContainer(for: [Goal.self, UserProgress.self, Message.self])
 }

@@ -18,7 +18,8 @@ struct SheRiseApp: App {
             Story.self,
             UserProgress.self,
             JournalEntry.self,
-            VisionItem.self
+            VisionItem.self,
+            Message.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
