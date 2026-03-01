@@ -15,6 +15,17 @@ struct ContentView: View {
     @Query private var userProgress: [UserProgress]
     @State private var showOnboarding = false
 
+    // Persist the app version for which the intro has already played.
+    // Cleared automatically when the version string changes (install / update).
+    @AppStorage("sheRise.introShownForVersion") private var introShownForVersion = ""
+    @State private var showIntro = false
+
+    private var appVersion: String {
+        let v = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+        let b = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
+        return "\(v).\(b)"
+    }
+
     var currentProgress: UserProgress {
         if let progress = userProgress.first {
             return progress
@@ -26,11 +37,30 @@ struct ContentView: View {
     }
 
     var body: some View {
-        if !authManager.isAuthenticated {
-            AuthView()
+        ZStack {
+            // Auth / main app always rendered beneath
+            if !authManager.isAuthenticated {
+                AuthView()
+                    .transition(.opacity)
+            } else {
+                mainTabView
+            }
+
+            // Intro sits on top and fades away — only on first run per version
+            if showIntro && !authManager.isAuthenticated {
+                SheRiseIntroView {
+                    introShownForVersion = appVersion
+                    withAnimation(.easeInOut(duration: 0.4)) {
+                        showIntro = false
+                    }
+                }
                 .transition(.opacity)
-        } else {
-            mainTabView
+                .zIndex(1)
+            }
+        }
+        .onAppear {
+            // Show intro only when not logged in AND version is new
+            showIntro = !authManager.isAuthenticated && introShownForVersion != appVersion
         }
     }
 
