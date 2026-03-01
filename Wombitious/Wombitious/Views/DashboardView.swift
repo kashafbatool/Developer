@@ -70,7 +70,7 @@ struct DashboardView: View {
                             MomentumBanner(streak: userProgress.currentStreak)
                         }
 
-                        ConfidenceScoreCard(score: userProgress.confidenceScore)
+                        GrowthTreeCard(goals: goals, confidenceScore: userProgress.confidenceScore)
 
                         if let focus = lockedFocusPair {
                             TipView(focusTip, arrowEdge: .bottom)
