@@ -22,6 +22,39 @@ struct GeminiService {
         let reasoning: String
     }
 
+    // MARK: - Content moderation
+    /// Returns `true` if the message is safe to show, `false` if it should be blocked.
+    /// Fails open — any network/API error allows the message through.
+    func moderateMessage(_ content: String) async -> Bool {
+        let prompt = """
+        You are a content moderator for a wellness and goal-tracking app. Review the message below and respond with ONLY one word.
+        Respond "SAFE" if the message is kind, supportive, neutral, encouraging, or friendly.
+        Respond "BLOCKED" if the message contains anything offensive, hurtful, discouraging, abusive, or inappropriate.
+        Message: "\(content)"
+        """
+
+        let requestBody: [String: Any] = [
+            "contents": [["parts": [["text": prompt]]]]
+        ]
+
+        guard let url = URL(string: "\(apiURL)?key=\(apiKey)") else { return true }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        guard let body = try? JSONSerialization.data(withJSONObject: requestBody) else { return true }
+        request.httpBody = body
+
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
+              let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200,
+              let result = try? JSONDecoder().decode(GeminiResponse.self, from: data),
+              let text = result.candidates.first?.content.parts.first?.text else {
+            return true // fail open
+        }
+
+        return text.trimmingCharacters(in: .whitespacesAndNewlines).uppercased().hasPrefix("SAFE")
+    }
+
     // MARK: - Extract goal title from dream text
     func suggestGoalTitle(from dreamText: String) async throws -> String {
         let prompt = """
