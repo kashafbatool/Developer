@@ -20,6 +20,7 @@ struct DashboardView: View {
     @State private var showMessageInbox = false
     @State private var completedGoal: Goal?
     @State private var lockedFocusID: UUID?
+    @State private var selectedGoalIndex: Int = 0
 
     var unreadMessages: [Message] { messages.filter { !$0.isRead } }
 
@@ -88,14 +89,23 @@ struct DashboardView: View {
                         } else if activeGoals.isEmpty {
                             EmptyGoalState(showGoalCreation: $showGoalCreation)
                         } else {
-                            ForEach(activeGoals) { goal in
-                                GoalProgressCard(goal: goal)
-                                MicroTargetsSection(
-                                    goal: goal,
-                                    userProgress: userProgress,
-                                    onGoalComplete: { completedGoal = $0 }
+                            // Goal pill switcher
+                            if activeGoals.count > 1 {
+                                GoalPillSwitcher(
+                                    goals: activeGoals,
+                                    selectedIndex: $selectedGoalIndex
                                 )
                             }
+
+                            // Single goal view
+                            let safeIndex = min(selectedGoalIndex, activeGoals.count - 1)
+                            let goal = activeGoals[safeIndex]
+                            GoalProgressCard(goal: goal)
+                            MicroTargetsSection(
+                                goal: goal,
+                                userProgress: userProgress,
+                                onGoalComplete: { completedGoal = $0 }
+                            )
                         }
                     }
                     .padding()
@@ -165,6 +175,9 @@ struct DashboardView: View {
             }
             .onChange(of: goals.count) { _, _ in
                 lockFocusIfNeeded()
+                if selectedGoalIndex >= activeGoals.count {
+                    selectedGoalIndex = max(0, activeGoals.count - 1)
+                }
             }
         }
     }
@@ -476,6 +489,42 @@ struct GoalProgressCard: View {
         .background(Color.appPlum)
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .shadow(color: Color.appPlum.opacity(0.3), radius: 12, y: 6)
+    }
+}
+
+// MARK: - Goal Pill Switcher
+
+struct GoalPillSwitcher: View {
+    let goals: [Goal]
+    @Binding var selectedIndex: Int
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(Array(goals.enumerated()), id: \.element.id) { index, goal in
+                    Button {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                            selectedIndex = index
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: goal.type.icon)
+                                .font(.caption2)
+                            Text(goal.title)
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .lineLimit(1)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(selectedIndex == index ? Color.appPlum : Color.appPlum.opacity(0.08))
+                        .foregroundStyle(selectedIndex == index ? .white : Color.appPlum)
+                        .clipShape(Capsule())
+                    }
+                }
+            }
+            .padding(.horizontal, 2)
+        }
     }
 }
 
