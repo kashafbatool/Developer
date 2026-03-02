@@ -167,7 +167,8 @@ struct DashboardView: View {
             }
             .onAppear {
                 lockFocusIfNeeded()
-                if userProgress.needsDailyCheckIn {
+                // Only trigger check-in for returning users who already have goals
+                if userProgress.needsDailyCheckIn && !goals.isEmpty {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         showCheckIn = true
                     }

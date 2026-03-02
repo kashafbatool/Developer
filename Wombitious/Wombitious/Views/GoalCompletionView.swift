@@ -29,6 +29,14 @@ struct GoalCompletionView: View {
             VStack(spacing: 0) {
                 Spacer()
 
+                // Stick figure victory animation
+                VictoryFigureView()
+                    .frame(width: 120, height: 120)
+                    .opacity(showContent ? 1 : 0)
+                    .animation(.easeIn(duration: 0.3).delay(0.1), value: showContent)
+
+                Spacer().frame(height: 8)
+
                 // Animated trophy using PhaseAnimator
                 PhaseAnimator(TrophyPhase.allCases, trigger: showContent) { phase in
                     ZStack {
@@ -173,6 +181,84 @@ struct GoalCompletionView: View {
                 .foregroundStyle(.white.opacity(0.7))
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Victory stick figure
+
+struct VictoryFigureView: View {
+    private let headR:  CGFloat = 9
+    private let torsoH: CGFloat = 26
+    private let armLen: CGFloat = 20
+    private let legLen: CGFloat = 22
+    private let lw:     CGFloat = 2.8
+    private let sX:     CGFloat = 7
+    private let hX:     CGFloat = 6
+
+    @State private var lArmAngle: Double = 18
+    @State private var rArmAngle: Double = -18
+    @State private var lLegAngle: Double = -10
+    @State private var rLegAngle: Double = 10
+    @State private var figureY:   CGFloat = 0
+
+    var body: some View {
+        Canvas { ctx, size in
+            // Directly reference state vars so Canvas re-renders on each animation frame
+            let la = lArmAngle, ra = rArmAngle, ll = lLegAngle, rl = rLegAngle
+            var c = ctx
+            c.translateBy(x: size.width / 2, y: size.height * 0.62)
+
+            let col = GraphicsContext.Shading.color(Color.white)
+
+            func line(from a: CGPoint, to b: CGPoint) {
+                var p = Path(); p.move(to: a); p.addLine(to: b)
+                c.stroke(p, with: col,
+                         style: StrokeStyle(lineWidth: lw, lineCap: .round, lineJoin: .round))
+            }
+
+            func tip(from o: CGPoint, angle: Double, length: CGFloat, side: CGFloat) -> CGPoint {
+                let r = angle * .pi / 180
+                return CGPoint(x: o.x + side * sin(r) * length, y: o.y + cos(r) * length)
+            }
+
+            // Head
+            let hc = CGPoint(x: 0, y: -(torsoH + 5 + headR))
+            c.fill(Path(ellipseIn: CGRect(x: hc.x - headR, y: hc.y - headR,
+                                          width: headR * 2, height: headR * 2)), with: col)
+            // Spine
+            line(from: CGPoint(x: 0, y: -(torsoH + 5)), to: .zero)
+            // Arms
+            let ls = CGPoint(x: -sX, y: -(torsoH - 3))
+            let rs = CGPoint(x:  sX, y: -(torsoH - 3))
+            line(from: ls, to: tip(from: ls, angle: la, length: armLen, side: -1))
+            line(from: rs, to: tip(from: rs, angle: ra, length: armLen, side:  1))
+            // Legs
+            let lh = CGPoint(x: -hX, y: 0)
+            let rh = CGPoint(x:  hX, y: 0)
+            line(from: lh, to: tip(from: lh, angle: ll, length: legLen, side: -1))
+            line(from: rh, to: tip(from: rh, angle: rl, length: legLen, side:  1))
+        }
+        .offset(y: figureY)
+        .onAppear { runVictory() }
+    }
+
+    private func runVictory() {
+        // Jump up with legs spread
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.5).delay(0.2)) {
+            figureY = -14; lLegAngle = -30; rLegAngle = 30
+        }
+        // Arms shoot up
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.5).delay(0.25)) {
+            lArmAngle = 155; rArmAngle = -155
+        }
+        // Land and settle, legs back down
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.6).delay(0.55)) {
+            figureY = 0; lLegAngle = -10; rLegAngle = 10
+        }
+        // Arms sway gently in victory pose
+        withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true).delay(1.0)) {
+            lArmAngle = 148; rArmAngle = -148
+        }
     }
 }
 

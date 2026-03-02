@@ -14,6 +14,8 @@ struct ContentView: View {
     @Query private var goals: [Goal]
     @Query private var userProgress: [UserProgress]
     @State private var showOnboarding = false
+    @State private var showCheckIn = false
+    @State private var selectedTab = 0
 
     // Persist the app version for which the intro has already played.
     // Cleared automatically when the version string changes (install / update).
@@ -38,9 +40,12 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            // Auth / main app always rendered beneath
+            // Auth / check-in / main app beneath
             if !authManager.isAuthenticated {
                 AuthView()
+                    .transition(.opacity)
+            } else if showCheckIn {
+                EnergyCheckInView(showCheckIn: $showCheckIn, userProgress: currentProgress)
                     .transition(.opacity)
             } else {
                 mainTabView
@@ -59,42 +64,41 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            // Show intro only when not logged in AND version is new
             showIntro = !authManager.isAuthenticated && introShownForVersion != appVersion
+            // Only trigger check-in if user already has goals (already onboarded)
+            if authManager.isAuthenticated && !goals.isEmpty && currentProgress.needsDailyCheckIn {
+                showCheckIn = true
+            }
+        }
+        .onChange(of: authManager.isAuthenticated) { _, isAuth in
+            // Only trigger check-in if user already has goals (already onboarded)
+            if isAuth && !goals.isEmpty && currentProgress.needsDailyCheckIn {
+                showCheckIn = true
+            }
         }
     }
 
     private var mainTabView: some View {
-        TabView {
-            // Home/Dashboard
+        TabView(selection: $selectedTab) {
             DashboardView(goals: goals, userProgress: currentProgress)
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
-                }
+                .tabItem { Label("Home", systemImage: "house.fill") }
+                .tag(0)
 
-            // Daily Journal
             JournalView()
-                .tabItem {
-                    Label("Journal", systemImage: "book.pages")
-                }
+                .tabItem { Label("Journal", systemImage: "book.pages") }
+                .tag(1)
 
-            // Vision Board
             VisionBoardView()
-                .tabItem {
-                    Label("Vision", systemImage: "sparkles.rectangle.stack.fill")
-                }
+                .tabItem { Label("Vision", systemImage: "sparkles.rectangle.stack.fill") }
+                .tag(2)
 
-            // Stories Gallery
             StoriesView()
-                .tabItem {
-                    Label("Stories", systemImage: "person.2.fill")
-                }
+                .tabItem { Label("Stories", systemImage: "person.2.fill") }
+                .tag(3)
 
-            // Profile/Progress
             ProfileView(userProgress: currentProgress)
-                .tabItem {
-                    Label("Profile", systemImage: "person.fill")
-                }
+                .tabItem { Label("Profile", systemImage: "person.fill") }
+                .tag(4)
         }
         .tint(Color.appPlum)
         .sheet(isPresented: $showOnboarding) {
@@ -103,6 +107,12 @@ struct ContentView: View {
         .onAppear {
             if goals.isEmpty {
                 showOnboarding = true
+            }
+        }
+        .onChange(of: showOnboarding) { _, showing in
+            // After onboarding is dismissed, check if daily check-in is needed
+            if !showing && currentProgress.needsDailyCheckIn {
+                showCheckIn = true
             }
         }
     }

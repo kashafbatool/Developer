@@ -32,7 +32,11 @@ struct SheRiseIntroView: View {
     // ── Logo ──────────────────────────────────────────────────────────────
     @State private var logoOpacity: Double  = 0
     @State private var logoScale:   CGFloat = 0.22
-    @State private var logoY:       CGFloat = -40
+    @State private var logoY:       CGFloat = -160
+
+    // ── Quote ─────────────────────────────────────────────────────────────
+    @State private var quoteText:    String = ""
+    @State private var quoteOpacity: Double = 0
 
     // ── Screen fade ───────────────────────────────────────────────────────
     @State private var fadeAlpha: Double = 0
@@ -98,17 +102,29 @@ struct SheRiseIntroView: View {
                 .offset(x: figureFlip * 15, y: figureY - 40)
 
             // sheRise logo
-            HStack(spacing: 0) {
-                Text("she")
-                    .font(.system(size: 52, weight: .light, design: .serif))
-                    .foregroundColor(Color.appCoral)
-                Text("Rise")
-                    .font(.system(size: 52, weight: .bold, design: .serif))
-                    .foregroundColor(Color.appPlum)
+            Image("SheRiseLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 240)
+                .scaleEffect(logoScale)
+                .offset(y: logoY)
+                .opacity(logoOpacity)
+
+            // Motivational quote — fades in with logo
+            if !quoteText.isEmpty {
+                Text(quoteText)
+                    .font(.footnote)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.appPlum.opacity(0.80))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 36)
+                    .padding(.vertical, 10)
+                    .background(Color.appPlum.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.horizontal, 24)
+                    .offset(y: 120)
+                    .opacity(quoteOpacity)
             }
-            .scaleEffect(logoScale)
-            .offset(y: logoY)
-            .opacity(logoOpacity)
 
             // Fade overlay — dark to match AuthView's gradient start colour
             Color(red: 0.07, green: 0.04, blue: 0.13)
@@ -220,14 +236,16 @@ struct SheRiseIntroView: View {
         await ease(0.25) { glowAlpha = 1; glowRadius = 48 }
         await sleep(80)
 
-        // 7 · Logo emerges (~0.50 s) ──────────────────────────────────────────
-        logoY = -40
-        await ease(0.50) { logoOpacity = 1; logoScale = 0.85; logoY = -52 }
+        // 7 · Logo + quote emerge together (~0.50 s) ─────────────────────────
+        logoY = -160
+        quoteText = Quotes.amazing.randomElement() ?? ""
+        withAnimation(.easeIn(duration: 0.50)) { quoteOpacity = 1 }
+        await ease(0.50) { logoOpacity = 1; logoScale = 0.85; logoY = -155 }
         await sleep(100)
 
         // 8 · Logo expands to centre (~0.45 s) ────────────────────────────────
-        await ease(0.45) { logoScale = 1.25; logoY = -28; glowAlpha = 0 }
-        await sleep(200)
+        await ease(0.45) { logoScale = 1.25; logoY = -150; glowAlpha = 0 }
+        await sleep(300)
 
         // 9 · Fade to dark, reveal login (~0.55 s) ────────────────────────────
         await ease(0.55) { fadeAlpha = 1 }

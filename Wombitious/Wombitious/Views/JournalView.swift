@@ -75,6 +75,8 @@ struct JournalView: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
             #endif
+            .toolbarBackground(paperColor, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .automatic) {
                     Button {
