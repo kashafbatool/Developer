@@ -110,8 +110,8 @@ struct ContentView: View {
             }
         }
         .onChange(of: showOnboarding) { _, showing in
-            // After onboarding is dismissed, check if daily check-in is needed
-            if !showing && currentProgress.needsDailyCheckIn {
+            // After onboarding closes AND a goal was created, show check-in (first-install scenario)
+            if !showing && !goals.isEmpty && currentProgress.needsDailyCheckIn {
                 showCheckIn = true
             }
         }

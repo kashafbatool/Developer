@@ -16,7 +16,6 @@ struct DashboardView: View {
 
     @Query(sort: \Message.createdDate, order: .reverse) private var messages: [Message]
     @State private var showGoalCreation = false
-    @State private var showCheckIn = false
     @State private var showMessageInbox = false
     @State private var completedGoal: Goal?
     @State private var lockedFocusID: UUID?
@@ -157,9 +156,6 @@ struct DashboardView: View {
             .sheet(isPresented: $showGoalCreation) {
                 GoalCreationView(showGoalCreation: $showGoalCreation)
             }
-            .sheet(isPresented: $showCheckIn) {
-                EnergyCheckInView(showCheckIn: $showCheckIn, userProgress: userProgress)
-            }
             .sheet(item: $completedGoal) { goal in
                 GoalCompletionView(goal: goal, userProgress: userProgress) {
                     completedGoal = nil
@@ -167,12 +163,6 @@ struct DashboardView: View {
             }
             .onAppear {
                 lockFocusIfNeeded()
-                // Only trigger check-in for returning users who already have goals
-                if userProgress.needsDailyCheckIn && !goals.isEmpty {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        showCheckIn = true
-                    }
-                }
             }
             .onChange(of: goals.count) { _, _ in
                 lockFocusIfNeeded()

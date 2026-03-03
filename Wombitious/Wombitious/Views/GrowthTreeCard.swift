@@ -159,8 +159,69 @@ struct TreeView: View {
                 bough(cx: cx, y: topY,     deg: -136, len:  8, color: twigColor, thick: 1.2)
                 bough(cx: cx, y: topY,     deg:  -44, len:  8, color: twigColor, thick: 1.2)
                 bough(cx: cx, y: topY - 2, deg:  -90, len:  9, color: twigColor, thick: 1.2)
+
+                // ── Leaves (layered on top, grow with progress) ────────────
+                if progress > 0.05 {
+                    // First buds at lower branch tips
+                    leaf(x: cx - 38, y: b1Y - 24, r: 16)
+                    leaf(x: cx + 38, y: b1Y - 24, r: 16)
+                }
+                if progress > 0.20 {
+                    // Lower canopy fills out
+                    leaf(x: cx - 52, y: b1Y - 16, r: 22)
+                    leaf(x: cx + 52, y: b1Y - 16, r: 22)
+                    leaf(x: cx - 26, y: b1Y - 34, r: 20)
+                    leaf(x: cx + 26, y: b1Y - 34, r: 20)
+                    leaf(x: cx,      y: b1Y - 38, r: 18)
+                }
+                if progress > 0.40 {
+                    // Mid canopy
+                    leaf(x: cx - 42, y: b2Y - 18, r: 22)
+                    leaf(x: cx + 42, y: b2Y - 18, r: 22)
+                    leaf(x: cx - 18, y: b2Y - 28, r: 20)
+                    leaf(x: cx + 18, y: b2Y - 28, r: 20)
+                    leaf(x: cx,      y: b2Y - 32, r: 18)
+                }
+                if progress > 0.65 {
+                    // Upper canopy
+                    leaf(x: cx - 26, y: b2Y - 38, r: 22)
+                    leaf(x: cx + 26, y: b2Y - 38, r: 22)
+                    leaf(x: cx,      y: topY - 16, r: 22)
+                    leaf(x: cx - 16, y: topY - 8,  r: 18)
+                    leaf(x: cx + 16, y: topY - 8,  r: 18)
+                }
+                if progress >= 1.0 {
+                    // Full bloom — extra clusters + gold accent dots
+                    leaf(x: cx - 46, y: b1Y - 38, r: 20)
+                    leaf(x: cx + 46, y: b1Y - 38, r: 20)
+                    leaf(x: cx,      y: topY - 28, r: 24)
+                    // Bloom accents
+                    ForEach(0..<6, id: \.self) { i in
+                        let a = Double(i) / 6.0 * .pi * 2
+                        let r2: CGFloat = 52
+                        Circle()
+                            .fill(Color.appGold.opacity(0.75))
+                            .frame(width: 8, height: 8)
+                            .position(x: cx + CGFloat(cos(a)) * r2,
+                                      y: (b2Y + topY) / 2 + CGFloat(sin(a)) * r2 * 0.6)
+                    }
+                }
             }
         }
+    }
+
+    @ViewBuilder
+    private func leaf(x: CGFloat, y: CGFloat, r: CGFloat) -> some View {
+        ZStack {
+            Circle()
+                .fill(Color(red: 0.18, green: 0.52, blue: 0.24).opacity(0.80))
+                .frame(width: r * 2, height: r * 2)
+            Circle()
+                .fill(Color(red: 0.28, green: 0.66, blue: 0.34).opacity(0.65))
+                .frame(width: r * 1.35, height: r * 1.35)
+                .offset(x: -r * 0.12, y: -r * 0.12)
+        }
+        .position(x: x, y: y)
     }
 
     @ViewBuilder
