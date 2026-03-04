@@ -51,9 +51,10 @@ struct AuthView: View {
 
                     // ── Wordmark / logo ──
                     VStack(spacing: 8) {
-                        Text("SheRise")
-                            .font(.system(size: logoCompact ? 32 : 42, weight: .light, design: .serif))
-                            .foregroundColor(.white)
+                        Image("SheRiseLogoAuth")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: logoCompact ? 130 : 200)
 
                         if !logoCompact {
                             Text("Your goals. Your story.")
