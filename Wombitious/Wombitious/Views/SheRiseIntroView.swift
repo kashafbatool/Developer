@@ -24,7 +24,7 @@ struct SheRiseIntroView: View {
                 .opacity(logoOpacity)
 
             // Fade overlay — dark to match AuthView's gradient start colour
-            Color(red: 0.07, green: 0.04, blue: 0.13)
+            Color.appDark
                 .ignoresSafeArea()
                 .opacity(fadeAlpha)
         }
