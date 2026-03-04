@@ -1,4 +1,4 @@
-# Wombitious 🌟
+# SheRise 🌟
 
 **An AI-powered goal tracking app for ambitious women — break big dreams into actionable steps, stay consistent, and celebrate every win.**
 
