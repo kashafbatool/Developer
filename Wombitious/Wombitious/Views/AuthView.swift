@@ -51,15 +51,9 @@ struct AuthView: View {
 
                     // ── Wordmark / logo ──
                     VStack(spacing: 8) {
-                        Text("Wombitious")
-                            .font(.system(size: logoCompact ? 32 : 42, weight: .bold, design: .serif))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [Color.appGold, Color.appCoral],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
+                        Text("SheRise")
+                            .font(.system(size: logoCompact ? 32 : 42, weight: .light, design: .serif))
+                            .foregroundColor(.white)
 
                         if !logoCompact {
                             Text("Your goals. Your story.")
