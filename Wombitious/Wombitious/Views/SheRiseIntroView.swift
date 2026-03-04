@@ -5,31 +5,9 @@
 
 import SwiftUI
 
-// MARK: - Intro Animation View
-
 struct SheRiseIntroView: View {
     var onComplete: () -> Void
 
-    // ── Figure pose — changes drive Canvas re-draws via withAnimation ──────
-    @State private var bodyTilt:   Double  = 0      // + = clockwise / lean forward
-    @State private var lArmAngle:  Double  = 18     // from body-down axis, + = outward
-    @State private var rArmAngle:  Double  = -18
-    @State private var lLegAngle:  Double  = -10
-    @State private var rLegAngle:  Double  = 10
-    @State private var figureY:    CGFloat = 0
-    @State private var figureFlip: CGFloat = 1      // 1 = right, -1 = facing viewer
-
-    // ── Glowing seed ──────────────────────────────────────────────────────
-    @State private var dotVisible = false
-    @State private var dotAlpha:  Double  = 0
-    @State private var dotX:      CGFloat = 40
-    @State private var dotY:      CGFloat = 60
-
-    // ── Hand glow ─────────────────────────────────────────────────────────
-    @State private var glowAlpha:  Double  = 0
-    @State private var glowRadius: CGFloat = 12
-
-    // ── Logo ──────────────────────────────────────────────────────────────
     @State private var logoOpacity: Double  = 0
     @State private var logoScale:   CGFloat = 0.22
     @State private var logoY:       CGFloat = -160
@@ -127,7 +105,7 @@ struct SheRiseIntroView: View {
             }
 
             // Fade overlay — dark to match AuthView's gradient start colour
-            Color(red: 0.07, green: 0.04, blue: 0.13)
+            Color.appDark
                 .ignoresSafeArea()
                 .opacity(fadeAlpha)
         }
@@ -136,68 +114,30 @@ struct SheRiseIntroView: View {
         }
     }
 
-    // MARK: Canvas drawing
-
-    private func renderFigure(in ctx: inout GraphicsContext) {
-        let col = GraphicsContext.Shading.color(Color.appPlum)
-
-        func line(from a: CGPoint, to b: CGPoint) {
-            var p = Path()
-            p.move(to: a); p.addLine(to: b)
-            ctx.stroke(p, with: col,
-                       style: StrokeStyle(lineWidth: lw, lineCap: .round, lineJoin: .round))
-        }
-
-        // angle 0° → limb straight down; +° → swings to its own side; side ±1
-        func tip(from o: CGPoint, angle: Double, length: CGFloat, side: CGFloat) -> CGPoint {
-            let r = angle * .pi / 180
-            return CGPoint(x: o.x + side * sin(r) * length,
-                           y: o.y + cos(r) * length)
-        }
-
-        // Head
-        let hc = CGPoint(x: 0, y: -(torsoH + 5 + headR))
-        ctx.fill(Path(ellipseIn: CGRect(x: hc.x - headR, y: hc.y - headR,
-                                        width: headR * 2, height: headR * 2)), with: col)
-        // Spine
-        line(from: CGPoint(x: 0, y: -(torsoH + 5)), to: CGPoint(x: 0, y: 0))
-        // Arms
-        let ls = CGPoint(x: -sX, y: -(torsoH - 4))
-        let rs = CGPoint(x:  sX, y: -(torsoH - 4))
-        line(from: ls, to: tip(from: ls, angle: lArmAngle, length: armLen, side: -1))
-        line(from: rs, to: tip(from: rs, angle: rArmAngle, length: armLen, side:  1))
-        // Legs
-        let lh = CGPoint(x: -hX, y: 0)
-        let rh = CGPoint(x:  hX, y: 0)
-        line(from: lh, to: tip(from: lh, angle: lLegAngle, length: legLen, side: -1))
-        line(from: rh, to: tip(from: rh, angle: rLegAngle, length: legLen, side:  1))
-    }
-
-    // MARK: Animation — total ≤ 4 s
+    // MARK: Animation — total ≈ 3 s
 
     @MainActor
     private func playIntro() async {
         func sleep(_ ms: Double) async {
             try? await Task.sleep(nanoseconds: UInt64(ms * 1_000_000))
         }
-        func ease(_ dur: Double, _ block: () -> Void) async {
-            withAnimation(.easeInOut(duration: dur), block)
-            await sleep(dur * 1_000)
-        }
-        func spring(_ dur: Double, _ block: () -> Void) async {
-            withAnimation(.spring(duration: dur, bounce: 0.25), block)
-            await sleep(dur * 1_000)
-        }
 
-        // 1 · Run (one stride, ~0.45 s) ─────────────────────────────────────
-        await ease(0.16) {
-            lArmAngle = -50; rArmAngle = 50; lLegAngle = 36; rLegAngle = -36; figureY = -4
+        // 1 · Logo fades + scales in (~0.7 s)
+        withAnimation(.easeOut(duration: 0.7)) {
+            logoOpacity = 1
+            logoScale   = 1.0
         }
-        await ease(0.16) {
-            lArmAngle = 50; rArmAngle = -50; lLegAngle = -36; rLegAngle = 36; figureY = 4
+        await sleep(700 + 900)   // animation + hold
+
+        // 2 · Gentle expand (~0.45 s)
+        withAnimation(.easeInOut(duration: 0.45)) {
+            logoScale = 1.15
         }
-        await ease(0.13) {
-            lArmAngle = 18; rArmAngle = -18; lLegAngle = -10; rLegAngle = 10; figureY = 0
+        await sleep(450 + 250)
+
+        // 3 · Fade to dark, reveal login (~0.55 s)
+        withAnimation(.easeInOut(duration: 0.55)) {
+            fadeAlpha = 1
         }
 
         // 2 · Fall (~0.35 s) ─────────────────────────────────────────────────

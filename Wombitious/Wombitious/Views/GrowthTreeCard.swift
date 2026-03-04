@@ -26,7 +26,7 @@ struct GrowthTreeCard: View {
         case 0..<0.25:   return "Sprouting 🌱"
         case 0.25..<0.5: return "Growing 🌿"
         case 0.5..<0.75: return "Thriving 🌳"
-        case 0.75..<1.0: return "Almost there 🌲"
+        case 0.75..<1.0: return "Almost there 🌺"
         default:         return "In Full Bloom 🌸"
         }
     }
@@ -78,7 +78,7 @@ struct GrowthTreeCard: View {
     }
 }
 
-// MARK: - Tree drawing
+// MARK: - Tree canvas
 
 struct TreeView: View {
     let progress: Double   // kept for API compatibility

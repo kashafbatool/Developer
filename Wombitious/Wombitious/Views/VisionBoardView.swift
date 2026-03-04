@@ -31,6 +31,11 @@ struct VisionBoardView: View {
             // ── Bedroom scene — scales toward wall on zoom ──
             BedroomScene(isZoomed: isZoomed)
                 .ignoresSafeArea()
+                .onTapGesture {
+                    guard !isZoomed else { return }
+                    zoomTask?.cancel()
+                    withAnimation(.easeInOut(duration: 1.2)) { isZoomed = true }
+                }
 
             // ── Interactive gallery — fades in after zoom settles ──
             if galleryVisible {
