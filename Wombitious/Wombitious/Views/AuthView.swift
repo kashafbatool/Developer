@@ -54,7 +54,7 @@ struct AuthView: View {
                         Image("SheRiseLogo")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: logoCompact ? 220 : 320)
+                            .frame(width: logoCompact ? 280 : 380)
 
                         if !logoCompact {
                             Text("Your goals. Your story.")

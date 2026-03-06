@@ -16,7 +16,9 @@ struct GrowthTreeCard: View {
     private var totalCount: Int { allTargets.count }
 
     private var progress: Double {
-        guard totalCount > 0 else { return 0 }
+        guard totalCount > 0 else {
+            return goals.contains { $0.isCompleted } ? 1.0 : 0
+        }
         return Double(completedCount) / Double(totalCount)
     }
 

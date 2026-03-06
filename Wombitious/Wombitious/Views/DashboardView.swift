@@ -21,7 +21,7 @@ struct DashboardView: View {
     @State private var lockedFocusID: UUID?
     @State private var selectedGoalIndex: Int = 0
 
-    var unreadMessages: [Message] { messages.filter { !$0.isRead } }
+    var unreadMessages: [Message] { messages.filter { $0.isUnlocked && !$0.isRead } }
 
     private let focusTip = FocusTip()
     private let createGoalTip = CreateGoalTip()
@@ -350,11 +350,7 @@ struct GreetingHeader: View {
                 Text(timeGreeting)
                     .font(.subheadline)
                     .foregroundStyle(Color.appTextSecondary)
-                Text("SheRise")
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .foregroundStyle(Color.appPlum)
-                Text(energyMessage)
+Text(energyMessage)
                     .font(.caption)
                     .foregroundStyle(Color.appGold)
                     .fontWeight(.medium)
@@ -853,12 +849,12 @@ struct MessageNotificationCard: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(unreadCount == 1
-                         ? "Someone left you a note ✨"
-                         : "\(unreadCount) notes waiting for you ✨")
+                         ? "A letter from past you is ready 💌"
+                         : "\(unreadCount) letters from past you are ready 💌")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.appPlum)
-                    Text("Tap to read")
+                    Text("Tap to open")
                         .font(.caption)
                         .foregroundStyle(Color.appGold)
                 }

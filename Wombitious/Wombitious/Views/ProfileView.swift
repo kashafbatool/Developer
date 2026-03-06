@@ -7,7 +7,6 @@
 
 import SwiftUI
 import SwiftData
-import Charts
 
 struct ProfileView: View {
     let userProgress: UserProgress
@@ -25,7 +24,6 @@ struct ProfileView: View {
                         RankCard(userProgress: userProgress)
                         StatsRow(userProgress: userProgress)
                         ForestSection(completedGoals: completedGoals)
-                        WeeklyProgressChart(userProgress: userProgress)
                         ActivityHeatmap(userProgress: userProgress)
                         StreakFreezeSection(userProgress: userProgress)
                         BadgesSection(userProgress: userProgress)
@@ -228,84 +226,6 @@ struct StatCard: View {
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.04), radius: 8, y: 3)
-    }
-}
-
-// MARK: - Weekly Progress Chart
-struct WeeklyProgressChart: View {
-    let userProgress: UserProgress
-    @State private var animate = false
-
-    struct DayData: Identifiable {
-        let id = UUID()
-        let label: String
-        let count: Int
-        let date: Date
-    }
-
-    var weekData: [DayData] {
-        let calendar = Calendar.current
-        return (0..<7).reversed().compactMap { offset -> DayData? in
-            guard let date = calendar.date(byAdding: .day, value: -offset, to: calendar.startOfDay(for: Date())) else { return nil }
-            let formatter = DateFormatter()
-            formatter.dateFormat = "EEE"
-            return DayData(
-                label: formatter.string(from: date),
-                count: userProgress.completionCount(for: date),
-                date: date
-            )
-        }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text("This Week")
-                    .font(.title3).fontWeight(.bold).foregroundStyle(Color.appPlum)
-                Spacer()
-                Text("tasks per day")
-                    .font(.caption).foregroundStyle(Color.appTextSecondary)
-            }
-
-            Chart(weekData) { day in
-                BarMark(
-                    x: .value("Day", day.label),
-                    y: .value("Tasks", animate ? day.count : 0)
-                )
-                .foregroundStyle(
-                    Calendar.current.isDateInToday(day.date)
-                    ? Color.appGold.gradient
-                    : Color.appPlum.opacity(0.6).gradient
-                )
-                .cornerRadius(6)
-                .annotation(position: .top) {
-                    if day.count > 0 {
-                        Text("\(day.count)")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundStyle(Calendar.current.isDateInToday(day.date) ? Color.appGold : Color.appPlum)
-                            .opacity(animate ? 1 : 0)
-                    }
-                }
-            }
-            .chartYAxis(.hidden)
-            .chartXAxis {
-                AxisMarks { _ in
-                    AxisValueLabel()
-                        .font(.caption2)
-                        .foregroundStyle(Color.appTextSecondary)
-                }
-            }
-            .frame(height: 120)
-            .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1), value: animate)
-        }
-        .padding(20)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: Color.appPlum.opacity(0.06), radius: 10, y: 4)
-        .onAppear {
-            withAnimation { animate = true }
-        }
     }
 }
 

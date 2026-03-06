@@ -13,6 +13,14 @@ import TipKit
 struct SheRiseApp: App {
     @StateObject private var authManager = AuthManager()
 
+    init() {
+        let tabBarAppearance = UITabBarAppearance()
+        tabBarAppearance.configureWithOpaqueBackground()
+        tabBarAppearance.backgroundColor = UIColor(red: 0.996, green: 0.996, blue: 0.890, alpha: 1)
+        UITabBar.appearance().standardAppearance = tabBarAppearance
+        UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
+    }
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Goal.self,
