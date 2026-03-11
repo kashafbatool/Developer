@@ -149,4 +149,4 @@ Press `Cmd+R`
 
 ---
 
-**Made with 💖 by Kashaf Batool**
+**Made with 💖 by Kashaf and Efrata**
